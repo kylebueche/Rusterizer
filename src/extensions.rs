@@ -1,7 +1,7 @@
 use crate::image::Image;
 use crate::rasterization::bresenham;
-use crate::vector::{Vec2f64, Vec2i};
-
+use crate::vector::{Vec2i};
+/*
 pub fn bresenham_f64(img: &mut Image, start: Vec2f64, end: Vec2f64) {
     // Using normalized device coordinates,
     // Bottom left pixel = (-1.0, -1.0)
@@ -11,8 +11,8 @@ pub fn bresenham_f64(img: &mut Image, start: Vec2f64, end: Vec2f64) {
     let bottom_left = Vec2f64::new(-1.0, -1.0);
     let bottom_right = Vec2f64::new(1.0, -1.0);
     if in_viewport(start) && in_viewport(end) {
-        let start = ndc_to_image(width, height, start);
-        let end = ndc_to_image(width, height, end);
+        let start = ndc_to_image(img.width, img.height, start);
+        let end = ndc_to_image(img.width, img.height, end);
         bresenham(img, start, end);
     } else {
         let intersect_left = line_intersection(top_left, bottom_left, start, end);
@@ -28,7 +28,7 @@ pub fn bresenham_f64(img: &mut Image, start: Vec2f64, end: Vec2f64) {
                 intersect_top.1
             } else if intersect_bottom.0 {
                 intersect_bottom.1
-            }
+            };
             let new_point = ndc_to_image(new_point);
             if in_viewport(start) {
                 let start = ndc_to_image(start);
@@ -39,7 +39,6 @@ pub fn bresenham_f64(img: &mut Image, start: Vec2f64, end: Vec2f64) {
             }
         } else {
             // No points in viewport
-            if
         }
     }
 }
@@ -111,3 +110,4 @@ fn line_intersection(start1: Vec2f64, end1: Vec2f64, start2: Vec2f64, end2: Vec2
 fn in_viewport(point: Vec2f64) {
     !(point.x < -1.0 || point.x > 1.0 || point.y < -1.0 || point.y > 1.0)
 }
+*/

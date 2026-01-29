@@ -1,7 +1,6 @@
 use std::ops;
 
-#[derive(Copy)]
-#[derive(Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Col3u8 {
     pub r: u8,
     pub g: u8,
@@ -30,8 +29,7 @@ impl Col3u8 {
     }
 }
 
-#[derive(Copy)]
-#[derive(Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Col3f64 {
     pub r: f64,
     pub g: f64,
@@ -57,6 +55,15 @@ impl Col3f64 {
     }
     pub fn blue() -> Self {
         Self::new(0.0, 0.0, 1.0)
+    }
+    pub fn magenta() -> Self {
+        Self::new(1.0, 0.0, 1.0)
+    }
+    pub fn yellow() -> Self {
+        Self::new(1.0, 1.0, 0.0)
+    }
+    pub fn cyan() -> Self {
+        Self::new(0.0, 1.0, 1.0)
     }
 }
 
