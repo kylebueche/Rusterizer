@@ -6,6 +6,8 @@ mod extensions;
 mod matrix;
 mod scalar;
 mod mesh;
+mod raytracing;
+mod camera;
 
 use crate::color::Col3f64;
 use crate::vector::Vec2i;
@@ -13,9 +15,17 @@ use crate::image::*;
 use crate::rasterization::{bresenham, draw_line_antialiased, scanline_triangle, draw_point, draw_line_experimental};
 use crate::vector::*;
 use crate::mesh::*;
+use crate::camera::*;
 use std::time::Instant;
 
+
 fn main() {
+    let mut camera = Camera::new(256, 256);
+    camera.trace_rays();
+    camera.viewport.write_to_file("rt.ppm");
+}
+
+fn homework_one() {
     let a = Vec3::new(127.0, 20.0, 0.0);
     let b = Vec3::new(20.0, 255.0 - 20.0, 0.0);
     let c = Vec3::new(255.0 - 20.0, 255.0 - 20.0, 0.0);

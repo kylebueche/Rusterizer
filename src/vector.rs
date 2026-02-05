@@ -26,7 +26,7 @@ impl Vec3
         }
     }
     pub fn length_squared(&self) -> f64 {
-        self.x * self.x + self.y * self.y * self.z * self.z
+        self.x * self.x + self.y * self.y + self.z * self.z
     }
     pub fn length(&self) -> f64 {
         self.length_squared().sqrt()
@@ -86,8 +86,8 @@ impl Vec3
             z: self.z * scale_vec.z,
         }
     }
-}
 
+}
 
 
 impl ops::Add<Vec3> for Vec3 {
@@ -133,6 +133,18 @@ impl ops::Mul<Vec3> for f64 {
         }
     }
 }
+
+impl ops::Div<f64> for Vec3 {
+    type Output = Vec3;
+    fn div(self, _rhs: f64) -> Vec3 {
+        Vec3 {
+            x: self.x / _rhs,
+            y: self.y / _rhs,
+            z: self.z / _rhs,
+        }
+    }
+}
+
 impl ops::AddAssign<Vec3> for Vec3 {
     fn add_assign(&mut self, other: Self) {
         *self = *self + other;
@@ -151,6 +163,22 @@ impl ops::MulAssign<f64> for Vec3 {
     }
 }
 
+impl ops::DivAssign<f64> for Vec3 {
+    fn div_assign(&mut self, scalar: f64) {
+        *self = *self / scalar;
+    }
+}
+
+impl ops::Neg for Vec3 {
+    type Output = Vec3;
+    fn neg(self) -> Vec3 {
+        Vec3 {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+        }
+    }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub struct Vec2i {
