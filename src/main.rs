@@ -10,7 +10,9 @@ mod raytracing;
 mod camera;
 mod hittable;
 mod implicits;
+mod solid;
 
+use std::sync::Arc;
 use crate::color::Col3f64;
 use crate::vector::Vec2i;
 use crate::image::*;
@@ -19,11 +21,17 @@ use crate::vector::*;
 use crate::mesh::*;
 use crate::camera::*;
 use std::time::Instant;
-
+use crate::hittable::HittableList;
+use crate::implicits::Sphere;
 
 fn main() {
-    let mut camera = Camera::new(256, 256);
-    camera.trace_rays();
+    let mut camera = Camera::new(512, 256);
+    let sphere = Sphere::new(Vec3::new(0.0, 0.8, 6.0), 2.0);
+    let mut hittable_list = HittableList::new();
+    hittable_list.add(Arc::new(sphere));
+    hittable_list.add(Arc::new(Sphere::new(Vec3::new(1.0, -0.8, 5.0), 2.0)));
+
+    camera.render(&hittable_list);
     camera.viewport.write_to_file("rt.ppm");
 }
 
