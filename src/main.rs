@@ -8,6 +8,8 @@ mod scalar;
 mod mesh;
 mod raytracing;
 mod camera;
+mod hittable;
+mod implicits;
 
 use crate::color::Col3f64;
 use crate::vector::Vec2i;

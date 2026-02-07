@@ -63,7 +63,7 @@ impl Camera {
                 let (hit_sphere, hit_point, hit_normal) = ray_sphere_intersection(ray, sphere, &mut interval);
                 //println!("Interval After: {:?}\n", interval);
                 if hit_sphere {
-                    self.viewport.over(x, y, Col3f64::new(hit_normal.x, hit_normal.y, hit_normal.z), 1.0);
+                    self.viewport.over(x, y, Col3f64::new(hit_normal.x/2.0 + 0.5, -hit_normal.y/2.0 + 0.5, -hit_normal.z/2.0 + 0.5), 1.0);
                 } else {
                     let blue = Vec3::new(0.0, 0.0, 1.0);
                     let white = Vec3::new(1.0, 1.0, 1.0);
