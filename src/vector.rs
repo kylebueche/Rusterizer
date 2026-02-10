@@ -1,8 +1,6 @@
 use std::ops::*;
 use std::ops;
 
-use crate::scalar::Scalar;
-
 #[derive(Copy, Clone, Debug)]
 pub struct Vec3 {
     pub x: f64,
@@ -58,19 +56,19 @@ impl Vec3
     pub fn rotated(&self, angles_radians: Self) -> Self {
         let sin_y = angles_radians.x.sin(); // roll
         let cos_y = angles_radians.x.cos();
-        let sin_B = angles_radians.y.sin(); // pitch
-        let cos_B = angles_radians.y.cos();
+        let sin_b = angles_radians.y.sin(); // pitch
+        let cos_b = angles_radians.y.cos();
         let sin_a = angles_radians.z.sin(); // yaw
         let cos_a = angles_radians.z.cos();
-        let mut x = cos_a * cos_B * self.x;
-        x += (cos_a * sin_B * sin_y - sin_a * cos_y) * self.y;
-        x += (cos_a * sin_B * cos_y + sin_a * sin_y) * self.z;
-        let mut y = sin_a * cos_B * self.x;
-        y += (sin_a * sin_B * sin_y + cos_a * cos_y) * self.y;
-        y += (sin_a * sin_B * cos_y - cos_a * sin_y) * self.z;
-        let mut z = - sin_B * self.x;
-        z += cos_B * sin_y * self.y;
-        z += cos_B * cos_y * self.z;
+        let mut x = cos_a * cos_b * self.x;
+        x += (cos_a * sin_b * sin_y - sin_a * cos_y) * self.y;
+        x += (cos_a * sin_b * cos_y + sin_a * sin_y) * self.z;
+        let mut y = sin_a * cos_b * self.x;
+        y += (sin_a * sin_b * sin_y + cos_a * cos_y) * self.y;
+        y += (sin_a * sin_b * cos_y - cos_a * sin_y) * self.z;
+        let mut z = - sin_b * self.x;
+        z += cos_b * sin_y * self.y;
+        z += cos_b * cos_y * self.z;
         Vec3::new(x, y, z)
     }
     pub fn scale_non_uniform(&mut self, scale_vec: Self) {

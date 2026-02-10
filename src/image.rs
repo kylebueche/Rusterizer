@@ -1,4 +1,3 @@
-use std::cmp::{min, max};
 use std::fs;
 use std::mem::swap;
 use std::ops::{Index, IndexMut};
@@ -9,18 +8,19 @@ pub struct Image {
     pub width: usize,
     pub height: usize,
     pub data: Vec<Col3f64>,
-    pub z_buffer: Vec<f64>,
-    pub use_z_buffering: bool,
+    //pub z_buffer: Vec<f64>,
+    //pub use_z_buffering: bool,
 }
 
 impl Image {
+    #[expect(unused)]
     pub fn new() -> Self {
         Self {
             width: 0,
             height: 0,
             data: Vec::new(),
-            z_buffer: Vec::new(),
-            use_z_buffering: false,
+            //z_buffer: Vec::new(),
+            //use_z_buffering: false,
         }
     }
     pub fn with_dimensions(width: usize, height: usize) -> Self {
@@ -28,14 +28,14 @@ impl Image {
             width: width,
             height: height,
             data: vec![Col3f64::white(); 3 * width * height],
-            z_buffer: vec![f64::NEG_INFINITY; 3 * width * height],
-            use_z_buffering: false,
+            //z_buffer: vec![f64::NEG_INFINITY; 3 * width * height],
+            //use_z_buffering: false,
         }
     }
 
-    pub fn clear_z_buffer(&mut self) {
+    /*pub fn clear_z_buffer(&mut self) {
         self.z_buffer.fill(f64::NEG_INFINITY);
-    }
+    }*/
 
     pub fn index_2d(&self, x: usize, y: usize) -> &Col3f64 {
         &self.data[self.width * y + x]
@@ -50,9 +50,8 @@ impl Image {
         let width = self.width;
         let height = self.height;
         ppm.push_str(format!("P3\n{width} {height}\n255\n").as_str());
-        for y in (0..height) {
-            for x in (0..width) {
-                let i = (y * width + x);
+        for y in 0..height {
+            for x in 0..width {
                 let col = Col3u8::from(self.index_2d(x, y).clone());
                 ppm.push_str(format!("{} {} {}\n", col.r, col.g, col.b).as_str());
             }
@@ -64,7 +63,7 @@ impl Image {
     }
 
     pub fn over(&mut self, x: usize, y: usize, color: Col3f64, alpha: f64) {
-        if x < 0 || x >= self.width || y < 0 || y >= self.height {
+        if x >= self.width || y >= self.height {
             return;
         }
         let pixel_color = self.index_2d_mut(x, y);
@@ -159,8 +158,8 @@ impl Image { // Rasterization details
     fn draw_point_circle(&mut self, a: Vec2i, color: Col3f64, alpha: f64, radius: i32) {
         for i in (- radius + 1)..=(radius - 1) {
             for j in (- radius + 1)..=(radius - 1) {
-                let x = (a.x + i);
-                let y = (a.y + j);
+                let x = a.x + i;
+                let y = a.y + j;
                 if i * i + j * j <= (radius * radius) {
                     self.over(x as usize, y as usize, color, alpha);
                 }
@@ -182,10 +181,10 @@ impl Image { // Rasterization details
             swap(&mut top_point, &mut mid_point);
         }
         // top flat-bottom triangle
-        let mut dy_left = mid_point.y - top_point.y;
-        let mut dx_left = mid_point.x - top_point.x;
-        let mut dy_right = bottom_point.y - top_point.y;
-        let mut dx_right = bottom_point.x - top_point.x;
+        let dy_left = mid_point.y - top_point.y;
+        let dx_left = mid_point.x - top_point.x;
+        let dy_right = bottom_point.y - top_point.y;
+        let dx_right = bottom_point.x - top_point.x;
         let mut slope_left = (dx_left as f64) / (dy_left as f64);
         let mut slope_right = (dx_right as f64) / (dy_right as f64);
         let mut x_left = top_point.x as f64;
@@ -231,17 +230,17 @@ impl Image { // Rasterization details
         // Not working right now
         let x_samples = 8;
         let y_samples = 8;
-        let mut top_left = Vec3::new(f64::min(a.x, f64::min(b.x, c.x)), f64::min(a.y, f64::min(b.y, c.y)), 0.0);
-        let mut bottom_right = Vec3::new(f64::max(a.x, f64::max(b.x, c.x)), f64::max(a.y, f64::max(b.y, c.y)), 0.0);
+        let top_left = Vec3::new(f64::min(a.x, f64::min(b.x, c.x)), f64::min(a.y, f64::min(b.y, c.y)), 0.0);
+        let bottom_right = Vec3::new(f64::max(a.x, f64::max(b.x, c.x)), f64::max(a.y, f64::max(b.y, c.y)), 0.0);
         for x in (top_left.x.floor() as i32)..=(bottom_right.x.ceil() as i32) {
             for y in (top_left.y.floor() as i32)..=(bottom_right.y.ceil() as i32) {
                 let mut final_alpha = 0.0;
                 for x_sample in 0..x_samples {
                     for y_sample in 0..y_samples {
                         let point = Vec3::new(x as f64 + (x_sample as f64 / x_samples as f64 + 0.5 / x_samples as f64), y as f64 + y_sample as f64 / y_samples as f64 + 0.5 / y_samples as f64, 0.0);
-                        let p_to_a = (a - point); //.normalized();
-                        let p_to_b = (b - point); //.normalized();
-                        let p_to_c = (c - point); //.normalized();
+                        let p_to_a = a - point;
+                        let p_to_b = b - point;
+                        let p_to_c = c - point;
                         //let sum_cos = v1.dot(v2) + v2.dot(v3) + v3.dot(v1);
                         let a_b = p_to_a.cross(p_to_b);
                         let b_c = p_to_b.cross(p_to_c);
@@ -293,16 +292,16 @@ impl Image { // Rasterization details
             yi = -1;
             dy = -dy;
         }
-        let mut D = (2 * dy) - dx;
+        let mut d = (2 * dy) - dx;
         let mut y = start.y;
 
         for x in start.x..end.x + 1 {
             self.over(x as usize, y as usize, color, alpha);
-            if D > 0 {
+            if d > 0 {
                 y = y + yi;
-                D = D + (2 * (dy - dx));
+                d = d + (2 * (dy - dx));
             } else {
-                D = D + 2 * dy;
+                d = d + 2 * dy;
             }
         }
     }
@@ -315,17 +314,17 @@ impl Image { // Rasterization details
             xi = -1;
             dx = -dx
         }
-        let mut D = (2 * dx) - dy;
+        let mut capital_d = (2 * dx) - dy;
         let mut x = start.x;
 
         for y in start.y..end.y + 1 {
             self.over(x as usize, y as usize, color, alpha);
-            if D > 0 {
+            if capital_d > 0 {
                 x = x + xi;
-                D = D + (2 * (dx - dy));
+                capital_d = capital_d + (2 * (dx - dy));
             }
             else {
-                D = D + 2 * dx;
+                capital_d = capital_d + 2 * dx;
             }
         }
     }
@@ -449,21 +448,21 @@ impl Image { // Rasterization details
         self.over(end.x as usize, end.y as usize, color, alpha);
         let dy = end.y - start.y;
         let dx = end.x - start.x;
-        let k = (dy as f64 / dx as f64);
-        let mut D: i32 = 0;
-        let mut overflowed = false;
+        let k = dy as f64 / dx as f64;
+        let mut capital_d: i32 = 0;
+        let mut overflowed;
         let d: i32 = (k * (i32::MAX as f64) + 0.5).floor() as i32;
         let mut x0 = start.x + 1;
         let mut y0 = start.y;
         let mut x1 = end.x + 1;
         let mut y1 = end.y;
         while x0 < x1 {
-            (D, overflowed) = D.overflowing_add(d);
+            (capital_d, overflowed) = capital_d.overflowing_add(d);
             if overflowed {
                 y0 = y0 + 1;
                 y1 = y1 - 1;
             }
-            let alpha_1 = D as f64 / 2_i32.pow(32 - 8) as f64;
+            let alpha_1 = capital_d as f64 / 2_i32.pow(32 - 8) as f64;
             self.over(x0 as usize, y0 as usize, color, alpha_1 * alpha);
             self.over(x1 as usize, y1 as usize, color, alpha_1 * alpha);
             self.over(x0 as usize, (y0 + 1) as usize, color, (1.0 - alpha_1) * alpha);

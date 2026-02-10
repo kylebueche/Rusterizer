@@ -1,40 +1,35 @@
+#![allow(unused)]
 mod color;
 mod vector;
 mod image;
-mod rasterization;
-mod extensions;
 mod matrix;
 mod scalar;
 mod mesh;
 mod raytracing;
-mod camera;
-mod hittable;
-mod implicits;
 mod solid;
+mod random;
 
 use std::sync::Arc;
 use crate::color::Col3f64;
-use crate::vector::Vec2i;
 use crate::image::*;
-use crate::rasterization::{bresenham, draw_line_antialiased, scanline_triangle, draw_point, draw_line_experimental};
 use crate::vector::*;
-use crate::mesh::*;
-use crate::camera::*;
-use std::time::Instant;
-use crate::hittable::HittableList;
-use crate::implicits::Sphere;
+use raytracing::camera::*;
+use raytracing::hittable::HittableList;
+use raytracing::implicits::sphere::*;
 
 fn main() {
-    let mut camera = Camera::new(512, 256);
-    let sphere = Sphere::new(Vec3::new(0.0, 0.8, 6.0), 2.0);
+    let mut camera = Camera::from_aspect_ratio(400, 16.0/9.0);
+    camera.position.z = 0.0;
+    camera.front.z = -1.0;
     let mut hittable_list = HittableList::new();
-    hittable_list.add(Arc::new(sphere));
-    hittable_list.add(Arc::new(Sphere::new(Vec3::new(1.0, -0.8, 5.0), 2.0)));
+    hittable_list.add(Arc::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)));
+    hittable_list.add(Arc::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)));
 
     camera.render(&hittable_list);
     camera.viewport.write_to_file("rt.ppm");
 }
 
+#[expect(unused)]
 fn homework_one() {
     let a = Vec3::new(127.0, 20.0, 0.0);
     let b = Vec3::new(20.0, 255.0 - 20.0, 0.0);
@@ -107,12 +102,16 @@ fn homework_one() {
     image_7.write_to_file("output7.ppm");
 }
 
+
+/*
+Legacy code that no longer works:
+
 fn test_image() {
 
     let mut img: Image = Image::with_dimensions(320, 320);
 
-    for x in (0..img.width) {
-        for y in (0..img.height) {
+    for x in 0..img.width {
+        for y in 0..img.height {
             let r = (x as f64) / ((img.width - 1) as f64);
             let g = (y as f64) / ((img.height - 1) as f64);
             let b = 0.0;
@@ -188,3 +187,5 @@ fn test_image() {
     img.write_to_file("output.ppm");
 
 }
+
+ */

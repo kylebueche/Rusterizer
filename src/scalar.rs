@@ -1,6 +1,7 @@
 use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign, Neg};
 
 // WIP Very Incomplete
+#[expect(unused)]
 pub trait Scalar<T>: Add<T, Output=T> + Sub<T, Output=T> + Mul<T, Output=T> + Div<T, Output=T>
 + AddAssign<T> + SubAssign<T> + MulAssign<T> + DivAssign<T> + Neg<Output=T>
 + Clone + Copy {
