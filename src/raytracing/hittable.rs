@@ -2,13 +2,15 @@ use crate::vector::*;
 use crate::raytracing::ray::*;
 use crate::raytracing::interval::*;
 use std::sync::Arc;
+use crate::raytracing::material::*;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone)]
 pub struct HitRecord {
     pub point: Vec3,
     pub normal: Vec3,
     pub t: f64,
     pub front_face: bool,
+    pub mat: Option<Arc<dyn Material>>,
 }
 
 impl HitRecord {
@@ -18,6 +20,7 @@ impl HitRecord {
             normal: Vec3::new(0.0, 1.0, 0.0),
             t: 0.0,
             front_face: true,
+            mat: Option::None,
         }
     }
     pub fn set_face_normal(&mut self, ray: Ray, outward_normal: Vec3) {

@@ -12,6 +12,8 @@ pub struct Camera {
     pub position: Vec3,
     pub front: Vec3,
     pub up: Vec3,
+    pub samples_per_pixel: usize,
+    pub max_depth: usize,
     // uninit
     right: Vec3,
     focal_length: f64,
@@ -19,10 +21,8 @@ pub struct Camera {
     viewport_width: f64,
     pixel00_top_left: Vec3,
     pixel00_center: Vec3,
-    samples_per_pixel: usize,
     pixel_delta_u: Vec3,
     pixel_delta_v: Vec3,
-    max_depth: usize,
     #[expect(unused)]
     pub field_of_view: f64,
 }
@@ -36,6 +36,8 @@ impl Camera {
             position: Vec3::new(0.0, 0.0, 0.0),
             front: Vec3::new(0.0, 0.0, 1.0),
             up: Vec3::new(0.0, 1.0, 0.0),
+            samples_per_pixel: 10,
+            max_depth: 10,
             // uninit:
             right: Vec3::new(1.0, 0.0, 0.0),
             viewport_width: 1.0,
@@ -43,10 +45,8 @@ impl Camera {
             pixel00_top_left: Vec3::new(0.0, 0.0, 0.0),
             pixel00_center: Vec3::new(0.0, 0.0, 0.0),
             focal_length: 1.0,
-            samples_per_pixel: 10,
             pixel_delta_u: Vec3::new(0.0, 0.0, 0.0),
             pixel_delta_v: Vec3::new(0.0, 0.0, 0.0),
-            max_depth: 10,
             // unused:
             field_of_view: 45.0,
         }
@@ -61,6 +61,8 @@ impl Camera {
             position: Vec3::new(0.0, 0.0, 0.0),
             front: Vec3::new(0.0, 0.0, 1.0),
             up: Vec3::new(0.0, 1.0, 0.0),
+            samples_per_pixel: 10,
+            max_depth: 10,
             // uninit:
             right: Vec3::new(1.0, 0.0, 0.0),
             viewport_width: 1.0,
@@ -68,10 +70,8 @@ impl Camera {
             pixel00_top_left: Vec3::new(0.0, 0.0, 0.0),
             pixel00_center: Vec3::new(0.0, 0.0, 0.0),
             focal_length: 1.0,
-            samples_per_pixel: 10,
             pixel_delta_u: Vec3::new(0.0, 0.0, 0.0),
             pixel_delta_v: Vec3::new(0.0, 0.0, 0.0),
-            max_depth: 10,
             // unused:
             field_of_view: 45.0,
         }
@@ -92,8 +92,6 @@ impl Camera {
             self.position + self.front * self.focal_length
             - viewport_u * 0.5 - viewport_v * 0.5;
         self.pixel00_center = self.pixel00_top_left + 0.5 * (self.pixel_delta_u + self.pixel_delta_v);
-        self.max_depth = 10;
-        self.samples_per_pixel = 10;
         let pixel_samples_scale = 1.0 / self.samples_per_pixel as f64;
 
         // render loop
@@ -108,20 +106,28 @@ impl Camera {
                 let fy = y as f64;
                 for sample in 0..self.samples_per_pixel {
                     let ray = self.get_ray(x, y);
-                    pixel_color += self.ray_color(ray, scene_objects);
+                    pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
                 }
                 pixel_color *= pixel_samples_scale;
-                *self.viewport.index_2d_mut(x, y) = pixel_color;
+                *self.viewport.index_2d_mut(x, y) = linear_to_gamma(pixel_color);
             }
         }
     }
 
-    fn ray_color(&self, ray: Ray, scene_objects: &impl Hittable) -> Vec3{
+    fn ray_color(&self, ray: Ray, scene_objects: &impl Hittable, depth: usize) -> Vec3{
+        if depth <= 0 {
+            return Col3f64::new(0.0, 0.0, 0.0);
+        }
         let mut hit_record = HitRecord::new();
-        let mut interval = Interval::new(f64::EPSILON, f64::INFINITY);
+        let mut interval = Interval::new(1.0e-8, f64::INFINITY);
         if scene_objects.first_hit_on_interval(ray, &mut interval, &mut hit_record) {
-            let direction = random_on_hemisphere(hit_record.normal);
-            return 0.5 * self.ray_color(Ray::new(hit_record.point, direction), scene_objects);
+            let mut scattered: Ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
+            let mut attenuation: Col3f64 = Col3f64::new(0.0, 0.0, 0.0);
+            let mat = hit_record.mat.clone();
+            if mat.unwrap().scatter(ray, &hit_record, &mut attenuation, &mut scattered) {
+                return attenuation * self.ray_color(scattered, scene_objects, depth - 1);
+            }
+            return Col3f64::new(0.0, 0.0, 0.0);
         }
         let unit_direction = ray.direction.normalized();
         let a = 0.5 * (unit_direction.y + 1.0);
@@ -136,5 +142,20 @@ impl Camera {
         let ray_origin = self.position;
         let ray_direction = pixel_sample - ray_origin;
         Ray::new(ray_origin, ray_direction)
+    }
+}
+
+fn linear_to_gamma_float(linear_component: f64) -> f64 {
+    // technically the standard: ~x^0.45
+    // linear_component.powf(1.0 / 2.2)
+    // fast approximation: x^0.5
+    linear_component.sqrt()
+}
+
+fn linear_to_gamma(linear_color: Col3f64) -> Col3f64 {
+    Col3f64 {
+        x: linear_to_gamma_float(linear_color.x),
+        y: linear_to_gamma_float(linear_color.y),
+        z: linear_to_gamma_float(linear_color.z),
     }
 }

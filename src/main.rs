@@ -16,14 +16,26 @@ use crate::vector::*;
 use raytracing::camera::*;
 use raytracing::hittable::HittableList;
 use raytracing::implicits::sphere::*;
+use raytracing::material::*;
 
 fn main() {
-    let mut camera = Camera::from_aspect_ratio(400, 16.0/9.0);
+    let mut camera = Camera::from_aspect_ratio(1000, 16.0/9.0);
     camera.position.z = 0.0;
     camera.front.z = -1.0;
+    camera.samples_per_pixel = 20;
     let mut hittable_list = HittableList::new();
-    hittable_list.add(Arc::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)));
-    hittable_list.add(Arc::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)));
+    let material_ground = Arc::new(Lambertian::new(Col3f64::new(0.8, 0.8, 0.0)));
+    let material_center = Arc::new(Lambertian::new(Col3f64::new(0.1, 0.2, 0.5)));
+    let material_left = Arc::new(Dielectric::new(1.50));
+    let material_right = Arc::new(Metal::new(Col3f64::new(0.8, 0.6, 0.2), 1.0));
+    let mut sphere_center = Arc::new(Sphere::new(Vec3::new(0.0, 0.0, -1.2), 0.5, material_center));
+    let mut sphere_left = Arc::new(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5, material_left));
+    let mut sphere_right = Arc::new(Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5, material_right));
+    let mut sphere_ground = Arc::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, material_ground));
+    hittable_list.add(sphere_left);
+    hittable_list.add(sphere_right);
+    hittable_list.add(sphere_center);
+    hittable_list.add(sphere_ground);
 
     camera.render(&hittable_list);
     camera.viewport.write_to_file("rt.ppm");

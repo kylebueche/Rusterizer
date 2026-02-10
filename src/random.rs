@@ -72,6 +72,32 @@ pub fn sample_square_3d(top_left: Vec3, du: Vec3, dv: Vec3) -> Vec3 {
 }
 
 #[inline]
-pub fn sample_square() -> Vec3{
+pub fn sample_square() -> Vec3 {
     Vec3::new(rand::random_range(-0.5..0.5),rand::random_range(-0.5..0.5), 0.0)
+}
+
+#[inline]
+pub fn random_cos_dist() -> f64 {
+    let uniform_rand: f64 = rand::random_range(0.0..1.0);
+    uniform_rand.asin()
+}
+
+pub fn random_cosine_direction(normal: Vec3) -> Vec3 {
+    let azimuth: f64 = rand::random_range(0.0..(std::f64::consts::PI * 2.0));
+    let zenith = random_cos_dist();
+    let helper = if normal.x.abs() > 0.9 {
+        Vec3::new(0.0, 1.0, 0.0)
+    } else {
+        Vec3::new(1.0, 0.0, 0.0)
+    };
+    let tangent = (normal.cross(helper)).normalized();
+    let bitangent = normal.cross(tangent);
+    let sin_z = zenith.sin();
+    let local_vec = Vec3 {
+        x: sin_z * azimuth.cos(),
+        y: sin_z * azimuth.sin(),
+        z: zenith.cos(),
+    };
+    
+    tangent * local_vec.x + bitangent * local_vec.y + normal * local_vec.z
 }

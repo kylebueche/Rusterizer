@@ -4,20 +4,25 @@ use crate::raytracing::interval::*;
 use crate::raytracing::ray::*;
 use crate::solid::Solid;
 use crate::vector::Vec3;
+use crate::Arc;
+use crate::raytracing::material::Material;
+use std::sync::Mutex;
 
-#[derive(Copy, Clone, Debug)]
+
 pub struct Sphere {
     pub position: Vec3,
     pub radius: f64,
     pub radius_squared: f64,
+    pub mat: Arc<dyn Material>,
 }
 
 impl Sphere {
-    pub fn new(position: Vec3, radius: f64) -> Sphere {
+    pub fn new(position: Vec3, radius: f64, mat: Arc<dyn Material>) -> Sphere {
         Sphere {
             position: position,
             radius: radius,
             radius_squared: radius * radius,
+            mat: mat,
         }
     }
 
@@ -46,6 +51,7 @@ impl Hittable for Sphere {
             hit_record.point = ray.at(t0);
             let outward_normal = self.normal_at(hit_record.point);
             hit_record.set_face_normal(ray, outward_normal);
+            hit_record.mat = Some(self.mat.clone());
         }
         if interval.contains(t1) {
             interval.upper_bound = t1;
@@ -53,6 +59,7 @@ impl Hittable for Sphere {
             hit_record.point = ray.at(t1);
             let outward_normal = self.normal_at(hit_record.point);
             hit_record.set_face_normal(ray, outward_normal);
+            hit_record.mat = Some(self.mat.clone());
         }
 
         hit_sphere
