@@ -29,7 +29,7 @@ impl HitRecord {
     }
 }
 
-pub trait Hittable: Sync + Send {
+pub trait Hittable: Send + Sync {
     fn first_hit_on_interval(&self, ray: Ray, interval: &mut Interval, hit_record: &mut HitRecord) -> bool;
 }
 

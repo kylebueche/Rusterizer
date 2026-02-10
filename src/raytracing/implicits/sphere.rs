@@ -8,13 +8,16 @@ use crate::Arc;
 use crate::raytracing::material::Material;
 use std::sync::Mutex;
 
-
+#[derive(Clone)]
 pub struct Sphere {
     pub position: Vec3,
     pub radius: f64,
     pub radius_squared: f64,
     pub mat: Arc<dyn Material>,
 }
+
+unsafe impl Sync for Sphere {}
+unsafe impl Send for Sphere {}
 
 impl Sphere {
     pub fn new(position: Vec3, radius: f64, mat: Arc<dyn Material>) -> Sphere {
@@ -31,6 +34,7 @@ impl Sphere {
         (1.0 / self.radius) * (point - self.position)
     }
 }
+
 
 // optimization: can use modified quadratic formula with h substitution
 impl Hittable for Sphere {

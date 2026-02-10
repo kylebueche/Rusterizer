@@ -31,8 +31,8 @@ impl ThreadPool {
     }
 }
 
-impl Drop for ThreadPool {
-    fn drop(&mut self) {
+impl  ThreadPool {
+    pub fn join(&mut self) {
         for worker in &mut self.workers {
             self.sender.send(ThreadPoolMessage::Terminate).unwrap();
         }

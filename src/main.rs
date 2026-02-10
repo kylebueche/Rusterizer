@@ -65,10 +65,10 @@ fn main() {
     let material3 = Arc::new(Metal::new(Col3f64::new(0.7, 0.6, 0.5), 0.0));
     world.add(Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, material3)));
 
-    let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
+    let mut camera = Camera::from_aspect_ratio(920, 16.0 / 9.0);
 
-    camera.samples_per_pixel = 500;
-    camera.max_depth = 50;
+    camera.samples_per_pixel = 5;
+    camera.max_depth = 5;
 
     camera.field_of_view = 35.0;
     camera.look_from = Vec3::new(13.0, 2.0, 3.0);
@@ -79,13 +79,14 @@ fn main() {
     camera.focus_dist = 10.0;
 
     let time = std::time::Instant::now();
-    camera.render(&Arc::new(world));
-    camera.viewport.lock().unwrap().write_to_file("rt.ppm");
+    camera.render(Arc::new(world));
+    camera.viewport.write_to_file("rt.ppm");
     let time_elapsed = time.elapsed();
     println!();
     println!("Time taken to render: {} seconds", time_elapsed.as_secs_f64());
 }
 
+/*
 fn defocus_example() {
     let mut camera = Camera::from_aspect_ratio(400, 16.0/9.0);
     camera.position.z = 0.0;
@@ -112,6 +113,7 @@ fn defocus_example() {
     camera.render(&hittable_list);
     camera.viewport.write_to_file("rt.ppm");
 }
+*/
 
 #[expect(unused)]
 fn homework_one() {
