@@ -82,6 +82,7 @@ pub fn random_cos_dist() -> f64 {
     uniform_rand.asin()
 }
 
+#[inline]
 pub fn random_cosine_direction(normal: Vec3) -> Vec3 {
     let azimuth: f64 = rand::random_range(0.0..(std::f64::consts::PI * 2.0));
     let zenith = random_cos_dist();
@@ -100,4 +101,14 @@ pub fn random_cosine_direction(normal: Vec3) -> Vec3 {
     };
     
     tangent * local_vec.x + bitangent * local_vec.y + normal * local_vec.z
+}
+
+#[inline]
+pub fn random_in_unit_disk() -> Vec3 {
+    loop {
+        let point = Vec3::new(rand::random_range(-1.0..1.0), rand::random_range(-1.0..1.0), 0.0);
+        if point.length_squared() < 1.0 {
+            return point;
+        }
+    }
 }

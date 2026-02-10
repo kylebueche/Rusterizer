@@ -5,15 +5,23 @@ use crate::raytracing::hittable::*;
 use crate::raytracing::interval::*;
 use crate::raytracing::ray::*;
 use crate::random::*;
+use crate::threadbatcher::ThreadPool;
+use std::sync::{Mutex, Arc};
+
 
 pub struct Camera {
-    pub viewport: Image,
+    pub viewport: Arc<Mutex<Image>>,
     pub aspect_ratio: f64,
     pub position: Vec3,
     pub front: Vec3,
     pub up: Vec3,
     pub samples_per_pixel: usize,
     pub max_depth: usize,
+    pub field_of_view: f64,
+    pub look_from: Vec3,
+    pub look_at: Vec3,
+    pub defocus_angle: f64,
+    pub focus_dist: f64,
     // uninit
     right: Vec3,
     focal_length: f64,
@@ -23,21 +31,28 @@ pub struct Camera {
     pixel00_center: Vec3,
     pixel_delta_u: Vec3,
     pixel_delta_v: Vec3,
-    #[expect(unused)]
-    pub field_of_view: f64,
+    u: Vec3,
+    v: Vec3,
+    w: Vec3,
+    defocus_disk_u: Vec3,
+    defocus_disk_v: Vec3,
 }
 
 impl Camera {
     #[expect(unused)]
     pub fn new(image_width: usize, image_height: usize) -> Self {
         Self {
-            viewport: Image::with_dimensions(image_width, image_height),
+            viewport: Arc::new(Mutex::new(Image::with_dimensions(image_width, image_height))),
             aspect_ratio: image_width as f64 / image_height as f64,
             position: Vec3::new(0.0, 0.0, 0.0),
             front: Vec3::new(0.0, 0.0, 1.0),
             up: Vec3::new(0.0, 1.0, 0.0),
             samples_per_pixel: 10,
             max_depth: 10,
+            look_from: Vec3::new(0.0, 0.0, 0.0),
+            look_at: Vec3::new(0.0, 0.0, -1.0),
+            defocus_angle: 0.0,
+            focus_dist: 10.0,
             // uninit:
             right: Vec3::new(1.0, 0.0, 0.0),
             viewport_width: 1.0,
@@ -47,8 +62,13 @@ impl Camera {
             focal_length: 1.0,
             pixel_delta_u: Vec3::new(0.0, 0.0, 0.0),
             pixel_delta_v: Vec3::new(0.0, 0.0, 0.0),
+            u: Vec3::new(0.0, 0.0, 0.0),
+            v: Vec3::new(0.0, 0.0, 0.0),
+            w: Vec3::new(0.0, 0.0, 0.0),
+            defocus_disk_u: Vec3::new(0.0, 0.0, 0.0),
+            defocus_disk_v: Vec3::new(0.0, 0.0, 0.0),
             // unused:
-            field_of_view: 45.0,
+            field_of_view: 90.0,
         }
     }
 
@@ -56,13 +76,17 @@ impl Camera {
         let image_height = (image_width as f64) / aspect_ratio;
         let image_height = if image_height < 1.0 { 1usize } else { image_height as usize };
         Self {
-            viewport: Image::with_dimensions(image_width, image_height),
+            viewport: Arc::new(Mutex::new(Image::with_dimensions(image_width, image_height))),
             aspect_ratio: aspect_ratio,
             position: Vec3::new(0.0, 0.0, 0.0),
             front: Vec3::new(0.0, 0.0, 1.0),
             up: Vec3::new(0.0, 1.0, 0.0),
             samples_per_pixel: 10,
             max_depth: 10,
+            look_from: Vec3::new(0.0, 0.0, 0.0),
+            look_at: Vec3::new(0.0, 0.0, -1.0),
+            defocus_angle: 0.0,
+            focus_dist: 10.0,
             // uninit:
             right: Vec3::new(1.0, 0.0, 0.0),
             viewport_width: 1.0,
@@ -72,29 +96,86 @@ impl Camera {
             focal_length: 1.0,
             pixel_delta_u: Vec3::new(0.0, 0.0, 0.0),
             pixel_delta_v: Vec3::new(0.0, 0.0, 0.0),
+            u: Vec3::new(0.0, 0.0, 0.0),
+            v: Vec3::new(0.0, 0.0, 0.0),
+            w: Vec3::new(0.0, 0.0, 0.0),
+            defocus_disk_u: Vec3::new(0.0, 0.0, 0.0),
+            defocus_disk_v: Vec3::new(0.0, 0.0, 0.0),
             // unused:
-            field_of_view: 45.0,
+            field_of_view: 90.0,
         }
     }
 
-    pub fn render(&mut self, scene_objects: &impl Hittable) {
-
-        // values to compute
-        self.right = self.front.cross(self.up);
-        self.focal_length = 1.0;
-        self.viewport_height = 2.0;
-        self.viewport_width = self.viewport_height * self.aspect_ratio;
-        let viewport_u = self.right * self.viewport_width;
-        let viewport_v = -self.up * self.viewport_height;
-        self.pixel_delta_u = (1.0 / self.viewport.width as f64) * viewport_u;
-        self.pixel_delta_v = (1.0 / self.viewport.height as f64) * viewport_v;
+    pub fn initialize(&mut self) {
+        self.position = self.look_from;
+        let theta = self.field_of_view.to_radians();
+        let h = (theta / 2.0).tan();
+        self.viewport_width = 2.0 * h * self.focus_dist;
+        self.viewport_height = self.viewport_width / self.aspect_ratio;
+        self.w = (self.look_from - self.look_at).normalized();
+        self.u = (self.up.cross(self.w)).normalized();
+        self.v = self.w.cross(self.u);
+        let viewport_u = self.u * self.viewport_width;
+        let viewport_v = -self.v * self.viewport_height;
+        self.pixel_delta_u = (1.0 / self.viewport.lock().unwrap().width as f64) * viewport_u;
+        self.pixel_delta_v = (1.0 / self.viewport.lock().unwrap().height as f64) * viewport_v;
         self.pixel00_top_left =
-            self.position + self.front * self.focal_length
-            - viewport_u * 0.5 - viewport_v * 0.5;
+            self.position - self.focus_dist * self.w
+                - viewport_u / 2.0
+                - viewport_v / 2.0;
         self.pixel00_center = self.pixel00_top_left + 0.5 * (self.pixel_delta_u + self.pixel_delta_v);
-        let pixel_samples_scale = 1.0 / self.samples_per_pixel as f64;
 
+        let defocus_radius = self.focus_dist * (self.defocus_angle / 2.0).to_radians().tan();
+        self.defocus_disk_u = self.u * defocus_radius;
+        self.defocus_disk_v = self.v * defocus_radius;
+    }
+
+    pub fn render(self: &mut Arc<Self>, scene_objects: &Arc<&dyn Hittable>) {
+        // values to compute
+        //self.focal_length = (self.look_from - self.look_at).length();
+
+        let pixel_samples_scale = 1.0 / self.samples_per_pixel as f64;
+        let chunk_width = 8;
+        let chunk_height = 8;
+        let thread_pool = ThreadPool::new(std::thread::available_parallelism().unwrap().get());
         // render loop
+        //let scene_objects = std::sync::Arc::new(scene_objects);
+        //let cam = std::sync::Arc::new(&mut self);
+        //let cam_mut = std::sync::Arc::new(std::sync::Mutex::new(self));
+        //let scene_objects = Arc::new(scene_objects);
+        //let cam_mut = Mutex::new(self);
+        for chunk_x in (0..self.viewport.lock().unwrap().width).step_by(chunk_width) {
+            for chunk_y in (0..self.viewport.lock().unwrap().height).step_by(chunk_height) {
+                let percent = (chunk_x + chunk_width * chunk_y) as f64 / (self.viewport.lock().unwrap().height * self.viewport.lock().unwrap().width) as f64;
+                let percent_int = percent as i32;
+                let percent_fract = (percent.fract() * 100.0) as i32;
+                print!("\rPercent complete: {}.{}%", percent_int, percent_fract);
+
+                let camera = Arc::clone(&self);
+                let scene_objects = Arc::clone(scene_objects);
+                let chunk_x = Arc::new(chunk_x);
+                let chunk_y = Arc::new(chunk_y);
+                let chunk_width = Arc::new(chunk_width);
+                let chunk_height = Arc::new(chunk_height);
+                let mut func = || {
+                    for x in *chunk_x..*chunk_width {
+                        let fx = x as f64;
+                        for y in *chunk_y..*chunk_height {
+                            let fy = y as f64;
+                            let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
+                            for sample in 0..camera.samples_per_pixel {
+                                let ray = camera.get_ray(x, y);
+                                pixel_color += camera.ray_color(ray, &scene_objects, self.max_depth);
+                            }
+                            pixel_color = pixel_color * pixel_samples_scale;
+                            *camera.viewport.lock().unwrap().index_2d_mut(x, y) = linear_to_gamma(pixel_color);
+                        }
+                    }
+                };
+                thread_pool.execute(func);
+            }
+        }
+        /*
         for x in 0..self.viewport.width {
             let fx = x as f64;
             let percent = 100.0 * fx / ((self.viewport.width - 1) as f64);
@@ -106,15 +187,16 @@ impl Camera {
                 let fy = y as f64;
                 for sample in 0..self.samples_per_pixel {
                     let ray = self.get_ray(x, y);
-                    pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
+                    pixel_color += self.ray_color(ray, scene_objects.clone(), self.max_depth);
                 }
                 pixel_color *= pixel_samples_scale;
                 *self.viewport.index_2d_mut(x, y) = linear_to_gamma(pixel_color);
             }
         }
+        */
     }
 
-    fn ray_color(&self, ray: Ray, scene_objects: &impl Hittable, depth: usize) -> Vec3{
+    fn ray_color(&self, ray: Ray, scene_objects: &Arc<&dyn Hittable>, depth: usize) -> Vec3{
         if depth <= 0 {
             return Col3f64::new(0.0, 0.0, 0.0);
         }
@@ -139,9 +221,18 @@ impl Camera {
         let pixel_sample = self.pixel00_center
         + (i as f64 + offset.x) * self.pixel_delta_u
         + (j as f64 + offset.y) * self.pixel_delta_v;
-        let ray_origin = self.position;
+        let ray_origin = if self.defocus_angle <= 0.0 {
+            self.position
+        } else {
+            self.defocus_disk_sample()
+        };
         let ray_direction = pixel_sample - ray_origin;
         Ray::new(ray_origin, ray_direction)
+    }
+
+    fn defocus_disk_sample(&self) -> Vec3 {
+        let point = random_in_unit_disk();
+        self.position + point.x * self.defocus_disk_u + point.y * self.defocus_disk_v
     }
 }
 

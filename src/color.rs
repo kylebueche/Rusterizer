@@ -60,6 +60,22 @@ impl Col3f64 {
     pub fn cyan() -> Self {
         Self::new(0.0, 1.0, 1.0)
     }
+    #[inline]
+    pub fn random() -> Self {
+        Self {
+            x: rand::random_range(0.0..1.0),
+            y: rand::random_range(0.0..1.0),
+            z: rand::random_range(0.0..1.0),
+        }
+    }
+    #[inline]
+    pub fn random_range(range: std::ops::Range<f64>) -> Self {
+        Self {
+            x: rand::random_range(range.clone()),
+            y: rand::random_range(range.clone()),
+            z: rand::random_range(range.clone()),
+        }
+    }
 }
 
 impl From<Col3u8> for Col3f64 {

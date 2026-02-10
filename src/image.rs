@@ -4,6 +4,7 @@ use std::ops::{Index, IndexMut};
 use crate::color::{Col3f64, Col3u8};
 use crate::vector::{Vec2i, Vec3};
 
+#[derive(Clone)]
 pub struct Image {
     pub width: usize,
     pub height: usize,
