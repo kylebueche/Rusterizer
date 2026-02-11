@@ -21,7 +21,8 @@ impl Lambertian {
 impl Material for Lambertian {
     #[inline]
     fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray) -> bool {
-        let scatter_direction = random_on_unit_sphere_above_normal(hit_record.normal);
+        //let scatter_direction = random_on_unit_sphere_above_normal(hit_record.normal);
+        let scatter_direction = random_cosine_direction(hit_record.normal);
         *scattered = Ray::new(hit_record.point, scatter_direction);
         *attenuation = self.albedo;
         true

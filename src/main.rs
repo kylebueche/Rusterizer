@@ -20,6 +20,127 @@ use raytracing::implicits::sphere::*;
 use raytracing::material::*;
 
 fn main() {
+    homework_2_render_1();
+}
+fn homework_2_render_3() {
+    let mut world = HittableList::new();
+
+    let ground_material = Arc::new(Metal::new(Col3f64::new(0.8, 0.2, 0.9), 0.1));
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, ground_material)));
+    let background_material = Arc::new(Metal::new(Col3f64::new(0.1, 0.7, 0.1), 0.0));
+    world.add(Arc::new(Sphere::new(Vec3::new(-1000.0, -300.0, -1000.0), 500.0, background_material)));
+    let background_material1 = Arc::new(Lambertian::new(Col3f64::new(0.8, 0.7, 0.1)));
+    world.add(Arc::new(Sphere::new(Vec3::new(-2000.0, -700.0, -800.0), 400.0, background_material1)));
+    let background_material2 = Arc::new(Lambertian::new(Col3f64::new(1.0, 0.4, 0.1)));
+    world.add(Arc::new(Sphere::new(Vec3::new(-800.0, -600.0, -2000.0), 800.0, background_material2)));
+
+    for a in 0..500 {
+        let choose_mat = rand::random_range(0.0..1.0);
+        let center = Vec3 {
+            x: rand::random_range(-150.0..150.0),
+            y: rand::random_range(0.0..300.0),
+            z: rand::random_range(-150.0..150.0),
+        };
+        let radius = rand::random_range(0.0..20.0);
+        if (center - Vec3::new(0.0, 150.0, 0.0)).length() < 150.0 {
+            if choose_mat < 0.25 {
+                // diffuse
+                let albedo = Col3f64::random() * Col3f64::random();
+                let sphere_material = Arc::new(Lambertian::new(albedo));
+                world.add(Arc::new(Sphere::new(center, radius, sphere_material)));
+            } else if choose_mat < 0.55 {
+                // metal
+                let albedo = Col3f64::random_range(0.5..1.0);
+                let fuzz = rand::random_range(0.0..0.5);
+                let sphere_material = Arc::new(Metal::new(albedo, fuzz));
+                world.add(Arc::new(Sphere::new(center, radius, sphere_material)));
+            } else {
+                // glass
+                let sphere_material = Arc::new(Dielectric::new(rand::random_range(0.5..1.5)));
+                world.add(Arc::new(Sphere::new(center, radius, sphere_material)));
+            }
+        }
+    }
+    let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
+
+    camera.samples_per_pixel = 100;
+    camera.max_depth = 50;
+
+    camera.field_of_view = 70.0;
+    camera.look_from = Vec3::new(400.0, 450.0, 400.0);
+    camera.look_at = Vec3::new(0.0, 150.0, 0.0);
+    camera.up = Vec3::new(0.0, 1.0, 0.0);
+
+    camera.defocus_angle = 0.5;
+    camera.focus_dist = (camera.look_at - camera.look_from).length();
+
+    let time = std::time::Instant::now();
+    camera.render(Arc::new(world));
+    camera.viewport.write_to_file("rt.ppm");
+    let time_elapsed = time.elapsed();
+    println!();
+    println!("Time taken to render: {} seconds", time_elapsed.as_secs_f64());
+}
+
+fn homework_2_render_2() {
+    let mut world = HittableList::new();
+
+    let ground_material = Arc::new(Lambertian::new(Col3f64::new(0.5, 0.5, 0.5)));
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, ground_material)));
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = rand::random_range(0.0..1.0);
+            let fa = a as f64;
+            let fb = b as f64;
+            let center = Vec3 {
+                x: fa + 0.9 * rand::random_range(-50.0..50.0),
+                y: rand::random_range(0.0..50.0),
+                z: fb + 0.9 * rand::random_range(-50.0..50.0),
+            };
+            let radius = rand::random_range(0.0..10.0);
+            if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+                if choose_mat < 0.3 {
+                    // diffuse
+                    let albedo = Col3f64::random() * Col3f64::random();
+                    let sphere_material = Arc::new(Lambertian::new(albedo));
+                    world.add(Arc::new(Sphere::new(center, radius, sphere_material)));
+                } else if choose_mat < 0.75 {
+                    // metal
+                    let albedo = Col3f64::random_range(0.5..1.0);
+                    let fuzz = rand::random_range(0.0..0.5);
+                    let sphere_material = Arc::new(Metal::new(albedo, fuzz));
+                    world.add(Arc::new(Sphere::new(center, radius, sphere_material)));
+                } else {
+                    // glass
+                    let sphere_material = Arc::new(Dielectric::new(1.5));
+                    world.add(Arc::new(Sphere::new(center, radius, sphere_material)));
+                }
+            }
+        }
+    }
+    let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
+
+    camera.samples_per_pixel = 100;
+    camera.max_depth = 50;
+
+    camera.field_of_view = 120.0;
+    camera.look_from = Vec3::new(100.0, 2.0, 3.0);
+    camera.look_at = Vec3::new(0.0, 30.0, 0.0);
+    camera.up = Vec3::new(0.0, 1.0, 0.0);
+
+    camera.defocus_angle = 0.6;
+    camera.focus_dist = 10.0;
+
+    let time = std::time::Instant::now();
+    camera.render(Arc::new(world));
+    camera.viewport.write_to_file("rt.ppm");
+    let time_elapsed = time.elapsed();
+    println!();
+    println!("Time taken to render: {} seconds", time_elapsed.as_secs_f64());
+}
+
+fn homework_2_render_1() {
     let mut world = HittableList::new();
 
     let ground_material = Arc::new(Lambertian::new(Col3f64::new(0.5, 0.5, 0.5)));
@@ -65,10 +186,10 @@ fn main() {
     let material3 = Arc::new(Metal::new(Col3f64::new(0.7, 0.6, 0.5), 0.0));
     world.add(Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, material3)));
 
-    let mut camera = Camera::from_aspect_ratio(920, 16.0 / 9.0);
+    let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
 
-    camera.samples_per_pixel = 5;
-    camera.max_depth = 5;
+    camera.samples_per_pixel = 500;
+    camera.max_depth = 50;
 
     camera.field_of_view = 35.0;
     camera.look_from = Vec3::new(13.0, 2.0, 3.0);

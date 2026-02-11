@@ -156,6 +156,13 @@ impl Camera {
                     row[x] = pixel_color;
                     //*self.viewport.index_2d_mut(x, y) = linear_to_gamma(pixel_color);
                 }
+            let mut val = logger_mutex.lock().unwrap();
+            *val = *val + 1;
+            let percent = 100.0 * (*val as f64) / (3.0 * img.height as f64);
+            let percent_int = percent as i32;
+            let percent_fract = (percent.fract() * 100.0) as i32;
+            print!("\rPercent complete: {}.{}%", percent_int, percent_fract);
+            std::mem::drop(val);
             //}
         });
         self.viewport = img;

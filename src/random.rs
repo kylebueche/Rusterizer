@@ -99,7 +99,7 @@ pub fn random_cosine_direction(normal: Vec3) -> Vec3 {
         y: sin_z * azimuth.sin(),
         z: zenith.cos(),
     };
-    
+
     tangent * local_vec.x + bitangent * local_vec.y + normal * local_vec.z
 }
 
