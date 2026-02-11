@@ -153,7 +153,7 @@ impl Camera {
                         pixel_color += self.ray_color(ray, Arc::clone(&scene_objects), self.max_depth);
                     }
                     pixel_color *= pixel_samples_scale;
-                    row[x] = pixel_color;
+                    row[x] = linear_to_gamma(pixel_color);
                     //*self.viewport.index_2d_mut(x, y) = linear_to_gamma(pixel_color);
                 }
             let mut val = logger_mutex.lock().unwrap();
