@@ -9,6 +9,12 @@ use crate::threadbatcher::ThreadPool;
 use std::sync::{Mutex, Arc};
 use rayon::prelude::*;
 
+pub enum RayTracingMethod {
+    Unoptimized,
+    Threaded,
+    SIMD,
+    ThreadedPlusSIMD,
+}
 
 pub struct Camera {
     pub viewport: Image,
@@ -131,31 +137,23 @@ impl Camera {
         self.defocus_disk_v = self.v * defocus_radius;
     }
 
-    pub fn render(&mut self, scene_objects: Arc<dyn Hittable>) {
+    pub fn render_threaded(&mut self, scene_objects: Arc<dyn Hittable>) {
         let logger_mutex = Mutex::new(0);
         self.initialize();
         let pixel_samples_scale = 1.0 / (self.samples_per_pixel as f64);
         let mut img = Image::with_dimensions(self.viewport.width, self.viewport.height);
         img.data.par_chunks_mut(img.width).enumerate().for_each(|(y, row)|{
-            /*for x in 0..self.viewport.width {
-                let val = logger_mutex.lock().unwrap();
-                let fy = y as f64;
-                let percent = 100.0 * fy / ((img.height - 1) as f64);
-                let percent_int = percent as i32;
-                let percent_fract = (percent.fract() * 100.0) as i32;
-                print!("\rPercent complete: {}.{}%", percent_int, percent_fract);
-                std::mem::drop(val);
- */
+            //let scene_objects = scene_objects.clone();
                 for x in 0..img.width {
                     let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
                     for sample in 0..self.samples_per_pixel {
                         let ray = self.get_ray(x, y);
-                        pixel_color += self.ray_color(ray, Arc::clone(&scene_objects), self.max_depth);
+                        pixel_color += self.ray_color(ray, &scene_objects, self.max_depth);
                     }
                     pixel_color *= pixel_samples_scale;
                     row[x] = linear_to_gamma(pixel_color);
-                    //*self.viewport.index_2d_mut(x, y) = linear_to_gamma(pixel_color);
                 }
+            // Progress logging
             let mut val = logger_mutex.lock().unwrap();
             *val = *val + 1;
             let percent = 100.0 * (*val as f64) / (3.0 * img.height as f64);
@@ -202,7 +200,7 @@ impl Camera {
                 */
     }
 
-    fn ray_color(&self, ray: Ray, scene_objects: Arc<dyn Hittable>, depth: usize) -> Vec3{
+    fn ray_color(&self, ray: Ray, scene_objects: &Arc<dyn Hittable>, depth: usize) -> Vec3{
         if depth <= 0 {
             return Col3f64::new(0.0, 0.0, 0.0);
         }
