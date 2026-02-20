@@ -28,7 +28,7 @@ impl Image {
         Self {
             width: width,
             height: height,
-            data: vec![Col3f64::white(); 3 * width * height],
+            data: vec![Col3f64::white(); width * height],
             //z_buffer: vec![f64::NEG_INFINITY; 3 * width * height],
             //use_z_buffering: false,
         }

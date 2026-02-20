@@ -6,6 +6,7 @@ version = 4
 name = "Rusterizer"
 version = "0.1.0"
 dependencies = [
+ "progress_bar",
  "rand",
  "rayon",
 ]
@@ -192,6 +193,12 @@ checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
 ]
+
+[[package]]
+name = "progress_bar"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e78e216a48ed863994dcc1357367f097d5a1875fc5bcf233875f32c1d442c734"
 
 [[package]]
 name = "quote"

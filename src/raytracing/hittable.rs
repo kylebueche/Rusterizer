@@ -2,6 +2,7 @@ use crate::vector::*;
 use crate::raytracing::ray::*;
 use crate::raytracing::interval::*;
 use std::sync::Arc;
+use std::rc::Rc;
 use crate::raytracing::material::*;
 
 #[derive(Clone)]

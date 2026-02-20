@@ -8,6 +8,7 @@ use crate::random::*;
 use crate::threadbatcher::ThreadPool;
 use std::sync::{Mutex, Arc};
 use rayon::prelude::*;
+use progress_bar::*;
 
 pub enum RayTracingMethod {
     Unoptimized,
@@ -137,70 +138,59 @@ impl Camera {
         self.defocus_disk_v = self.v * defocus_radius;
     }
 
-    pub fn render_threaded(&mut self, scene_objects: Arc<dyn Hittable>) {
-        let logger_mutex = Mutex::new(0);
+    pub fn render(&mut self, scene_objects: Arc<dyn Hittable>) {
+        init_progress_bar(self.viewport.data.len());
         self.initialize();
+        //let scene_objects = Arc::new(scene_objects);
         let pixel_samples_scale = 1.0 / (self.samples_per_pixel as f64);
-        let mut img = Image::with_dimensions(self.viewport.width, self.viewport.height);
-        img.data.par_chunks_mut(img.width).enumerate().for_each(|(y, row)|{
-            //let scene_objects = scene_objects.clone();
-                for x in 0..img.width {
-                    let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
-                    for sample in 0..self.samples_per_pixel {
-                        let ray = self.get_ray(x, y);
-                        pixel_color += self.ray_color(ray, &scene_objects, self.max_depth);
-                    }
-                    pixel_color *= pixel_samples_scale;
-                    row[x] = linear_to_gamma(pixel_color);
+        for y in 0..self.viewport.height {
+            for x in 0..self.viewport.width {
+                inc_progress_bar();
+                let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
+                for sample in 0..self.samples_per_pixel {
+                    let ray = self.get_ray(x, y);
+                    //pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
                 }
-            // Progress logging
-            let mut val = logger_mutex.lock().unwrap();
-            *val = *val + 1;
-            let percent = 100.0 * (*val as f64) / (3.0 * img.height as f64);
+                pixel_color *= pixel_samples_scale;
+                *self.viewport.index_2d_mut(x, y) = pixel_color;
+            }
+            let percent = 100.0 * (y as f64) / (self.viewport.height as f64);
             let percent_int = percent as i32;
             let percent_fract = (percent.fract() * 100.0) as i32;
             print!("\rPercent complete: {}.{}%", percent_int, percent_fract);
-            std::mem::drop(val);
-            //}
-        });
-        self.viewport = img;
+        }
+        finalize_progress_bar();
+    }
+    pub fn render_threaded(&mut self, scene_objects: &impl Hittable) {
+        self.initialize();
+        let pixel_samples_scale = 1.0 / (self.samples_per_pixel as f64);
 
-        // alternate render loop using tiles
-        /*
-        let chunk_width = 64;
-        let chunk_height = 64;
-                let viewport_width = self.viewport.width;
-                let viewport_height = self.viewport.height;
-                for chunk_x in (0..viewport_width).step_by(chunk_width) {
-                    for chunk_y in (0..viewport_width).step_by(chunk_height) {
-                        let percent = 100.0 * (chunk_x + chunk_width * chunk_y) as f64 / (self.viewport.height * self.viewport.width) as f64;
-                        let percent_int = (percent) as i32;
-                        let percent_fract = (percent.fract() * 100.0) as i32;
-                        print!("\rPercent complete: {}.{}%", percent_int, percent_fract);
-
-                        let start_x = chunk_x;
-                        let start_y = chunk_y;
-                        let end_x = (chunk_x + chunk_width).min(viewport_width);
-                        let end_y = (chunk_y + chunk_height).min(viewport_height);
-                        //thread_pool.execute(move || {
-                            for x in start_x..end_x {
-                                for y in start_y..end_y {
-                                    let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
-                                    for sample in 0..self.samples_per_pixel {
-                                        let ray = self.get_ray(x, y);
-                                        pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
-                                    }
-                                    pixel_color = pixel_color * pixel_samples_scale;
-                                    *self.viewport.index_2d_mut(x, y) = linear_to_gamma(pixel_color);
-                                }
-                            }
-                        //});
-                    }
+        let mut img = Image::with_dimensions(self.viewport.width, self.viewport.height);
+        let num_chunks = 1920;
+        let chunk_size = img.data.len() / num_chunks;
+        init_progress_bar(num_chunks);
+        img.data.par_chunks_mut(chunk_size).enumerate().for_each(|(chunk_number, row)|{
+            for i in 0..row.len() {
+                let index = chunk_number * chunk_size + i;
+                let y = index / img.width;
+                let x = index % img.width;
+                let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
+                for sample in 0..self.samples_per_pixel {
+                    let ray = self.get_ray(x, y);
+                    pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
                 }
-                */
+                pixel_color *= pixel_samples_scale;
+                row[i] = linear_to_gamma(pixel_color);
+            }
+            inc_progress_bar()
+
+        });
+        finalize_progress_bar();
+
+        self.viewport = img;
     }
 
-    fn ray_color(&self, ray: Ray, scene_objects: &Arc<dyn Hittable>, depth: usize) -> Vec3{
+    fn ray_color(&self, ray: Ray, scene_objects: &impl Hittable, depth: usize) -> Vec3{
         if depth <= 0 {
             return Col3f64::new(0.0, 0.0, 0.0);
         }
