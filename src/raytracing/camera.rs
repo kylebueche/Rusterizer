@@ -168,10 +168,10 @@ impl Camera {
         let mut img = Image::with_dimensions(self.viewport.width, self.viewport.height);
         let num_chunks = 1920;
         let chunk_size = img.data.len() / num_chunks;
-        init_progress_bar(num_chunks);
-        img.data.par_chunks_mut(chunk_size).enumerate().for_each(|(chunk_number, row)|{
+        init_progress_bar(img.data.len());//num_chunks);
+        img.data.par_chunks_mut(num_chunks).enumerate().for_each(/*|(i, pixel)|{*/ |(chunk_number, row)|{
             for i in 0..row.len() {
-                let index = chunk_number * chunk_size + i;
+                let index =  chunk_number * chunk_size + i;
                 let y = index / img.width;
                 let x = index % img.width;
                 let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
@@ -180,12 +180,34 @@ impl Camera {
                     pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
                 }
                 pixel_color *= pixel_samples_scale;
+                //*pixel = linear_to_gamma(pixel_color);
                 row[i] = linear_to_gamma(pixel_color);
             }
-            inc_progress_bar()
+            //inc_progress_bar()
 
         });
         finalize_progress_bar();
+
+        self.viewport = img;
+    }
+
+    pub fn render_threaded_fast(&mut self, scene_objects: &impl Hittable) {
+        self.initialize();
+        let pixel_samples_scale = 1.0 / (self.samples_per_pixel as f64);
+
+        let mut img = Image::with_dimensions(self.viewport.width, self.viewport.height);
+        img.data.par_iter_mut().enumerate().for_each(|(index, pixel)| {
+            let y = index / img.width;
+            let x = index % img.width;
+            let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
+            for sample in 0..self.samples_per_pixel {
+                let ray = self.get_ray(x, y);
+                pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
+            }
+            pixel_color *= pixel_samples_scale;
+            *pixel = linear_to_gamma(pixel_color);
+
+        });
 
         self.viewport = img;
     }

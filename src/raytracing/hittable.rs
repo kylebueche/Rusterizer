@@ -68,3 +68,34 @@ impl Hittable for HittableList {
         hit_anything
     }
 }
+
+pub struct HittableStaticList<T: Hittable> {
+    hittables: Vec<T>,
+}
+
+impl<T: Hittable> HittableStaticList<T> {
+    pub fn new() -> HittableStaticList<T> {
+        HittableStaticList {
+            hittables: vec![]
+        }
+    }
+    
+    pub fn add(&mut self, hittable: T) {
+        self.hittables.push(hittable);
+    }
+    
+    pub fn clear(&mut self) {
+        self.hittables.clear();
+    }
+}
+
+impl<T: Hittable> Hittable for HittableStaticList<T> {
+    fn first_hit_on_interval(&self, ray: Ray, interval: &mut Interval, hit_record: &mut HitRecord) -> bool {
+        let mut hit_anything = false;for hittable in &self.hittables {
+            if hittable.first_hit_on_interval(ray, interval, hit_record) {
+                hit_anything = true;
+            }
+        }
+        hit_anything
+    }
+}
