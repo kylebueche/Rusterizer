@@ -166,10 +166,10 @@ impl Camera {
         let pixel_samples_scale = 1.0 / (self.samples_per_pixel as f64);
 
         let mut img = Image::with_dimensions(self.viewport.width, self.viewport.height);
-        let num_chunks = 1920;
+        let num_chunks = img.height * 200;
         let chunk_size = img.data.len() / num_chunks;
-        init_progress_bar(img.data.len());//num_chunks);
-        img.data.par_chunks_mut(num_chunks).enumerate().for_each(/*|(i, pixel)|{*/ |(chunk_number, row)|{
+        init_progress_bar(num_chunks);
+        img.data.par_chunks_mut(chunk_size).enumerate().for_each(|(chunk_number, row)|{
             for i in 0..row.len() {
                 let index =  chunk_number * chunk_size + i;
                 let y = index / img.width;
@@ -180,10 +180,9 @@ impl Camera {
                     pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
                 }
                 pixel_color *= pixel_samples_scale;
-                //*pixel = linear_to_gamma(pixel_color);
-                row[i] = linear_to_gamma(pixel_color);
+                row[i] = linear_to_srgb(pixel_color);
             }
-            //inc_progress_bar()
+            inc_progress_bar()
 
         });
         finalize_progress_bar();
@@ -191,7 +190,7 @@ impl Camera {
         self.viewport = img;
     }
 
-    pub fn render_threaded_fast(&mut self, scene_objects: &impl Hittable) {
+    pub fn render_threaded_alternate(&mut self, scene_objects: &impl Hittable) {
         self.initialize();
         let pixel_samples_scale = 1.0 / (self.samples_per_pixel as f64);
 
@@ -264,5 +263,21 @@ fn linear_to_gamma(linear_color: Col3f64) -> Col3f64 {
         x: linear_to_gamma_float(linear_color.x),
         y: linear_to_gamma_float(linear_color.y),
         z: linear_to_gamma_float(linear_color.z),
+    }
+}
+
+fn linear_to_srgb_float(linear_component: f64) -> f64 {
+    if linear_component <= 0.0031308 {
+        12.92 * linear_component
+    } else {
+        1.055 * linear_component.powf(1.0 / 2.4) - 0.055
+    }
+}
+
+fn linear_to_srgb(linear_color: Col3f64) -> Col3f64 {
+    Col3f64 {
+        x: linear_to_srgb_float(linear_color.x),
+        y: linear_to_srgb_float(linear_color.y),
+        z: linear_to_srgb_float(linear_color.z),
     }
 }
