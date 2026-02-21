@@ -189,8 +189,8 @@ fn homework_2_render_1() {
 
     let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
 
-    camera.samples_per_pixel = 1000;
-    camera.max_depth = 100;
+    camera.samples_per_pixel = 500;
+    camera.max_depth = 50;
 
     camera.field_of_view = 35.0;
     camera.look_from = Vec3::new(13.0, 2.0, 3.0);

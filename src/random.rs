@@ -1,18 +1,29 @@
 use crate::vector::*;
+use fastrand;
 
 #[inline]
-pub fn random_vector_in_unit_sphere() -> Vec3 {
+pub fn random_range(range: std::ops::Range<f64>, rng: &mut fastrand::Rng) -> f64 {
+    remap(rng.f64(), range.start, range.end)
+}
+
+#[inline]
+pub fn remap(t: f64, a: f64, b: f64) -> f64 {
+    t * (b - a) + a
+}
+
+#[inline]
+pub fn random_vector_in_unit_sphere(rng: &mut fastrand::Rng) -> Vec3 {
     let mut sample = Vec3 {
-        x: rand::random_range(-1.0..=1.0),
-        y: rand::random_range(-1.0..=1.0),
-        z: rand::random_range(-1.0..=1.0),
+        x: random_range(-1.0..1.0, rng),
+        y: random_range(-1.0..1.0, rng),
+        z: random_range(-1.0..1.0, rng),
     };
     loop {
         if (f64::EPSILON..1.0).contains(&sample.length_squared()) {
             sample = Vec3 {
-                x: rand::random_range(-1.0..=1.0),
-                y: rand::random_range(-1.0..=1.0),
-                z: rand::random_range(-1.0..=1.0),
+                x: random_range(-1.0..1.0, rng),
+                y: random_range(-1.0..1.0, rng),
+                z: random_range(-1.0..1.0, rng),
             };
         }
         else {
@@ -23,13 +34,13 @@ pub fn random_vector_in_unit_sphere() -> Vec3 {
 }
 
 #[inline]
-pub fn random_unit_vector() -> Vec3 {
-    random_vector_in_unit_sphere().normalized()
+pub fn random_unit_vector(rng: &mut fastrand::Rng) -> Vec3 {
+    random_vector_in_unit_sphere(rng).normalized()
 }
 
 #[inline]
-pub fn random_on_hemisphere(normal: Vec3) -> Vec3 {
-    let on_unit_sphere = random_unit_vector();
+pub fn random_on_hemisphere(normal: Vec3, rng: &mut fastrand::Rng) -> Vec3 {
+    let on_unit_sphere = random_unit_vector(rng);
     let on_hemisphere = if on_unit_sphere.dot(normal) > 0.0 {
         on_unit_sphere
     } else {
@@ -39,53 +50,53 @@ pub fn random_on_hemisphere(normal: Vec3) -> Vec3 {
 }
 
 #[inline]
-pub fn random_on_unit_sphere_above_normal(normal: Vec3) -> Vec3 {
-    let mut on_unit_sphere = random_unit_vector();
+pub fn random_on_unit_sphere_above_normal(normal: Vec3, rng: &mut fastrand::Rng) -> Vec3 {
+    let mut on_unit_sphere = random_unit_vector(rng);
     let mut on_unit_above_normal = on_unit_sphere + normal;
     loop  {
         if on_unit_above_normal.length_squared() > f64::EPSILON {
             break;
         }
-        on_unit_sphere = random_unit_vector();
+        on_unit_sphere = random_unit_vector(rng);
         on_unit_above_normal = on_unit_sphere + normal;
     }
     on_unit_above_normal
 }
 
 #[inline]
-pub fn random_in_unit_sphere_above_normal(normal: Vec3) -> Vec3 {
-    let mut in_unit_sphere = random_vector_in_unit_sphere();
+pub fn random_in_unit_sphere_above_normal(normal: Vec3, rng: &mut fastrand::Rng) -> Vec3 {
+    let mut in_unit_sphere = random_vector_in_unit_sphere(rng);
     let mut in_unit_above_normal = in_unit_sphere + normal;
     loop  {
         if in_unit_above_normal.length_squared() > f64::EPSILON {
             break;
         }
-        in_unit_sphere = random_unit_vector();
+        in_unit_sphere = random_unit_vector(rng);
         in_unit_above_normal = in_unit_sphere + normal;
     }
     in_unit_above_normal
 }
 
 #[inline]
-pub fn sample_square_3d(top_left: Vec3, du: Vec3, dv: Vec3) -> Vec3 {
-    top_left + rand::random_range(0.0..1.0) * du + rand::random_range(0.0..1.0) * dv
+pub fn sample_square_3d(top_left: Vec3, du: Vec3, dv: Vec3, rng: &mut fastrand::Rng) -> Vec3 {
+    top_left + random_range(0.0..1.0, rng) * du + random_range(0.0..1.0, rng) * dv
 }
 
 #[inline]
-pub fn sample_square() -> Vec3 {
-    Vec3::new(rand::random_range(-0.5..0.5),rand::random_range(-0.5..0.5), 0.0)
+pub fn sample_square(rng: &mut fastrand::Rng) -> Vec3 {
+    Vec3::new(random_range(-0.5..0.5, rng), random_range(-0.5..0.5, rng), 0.0)
 }
 
 #[inline]
-pub fn random_cos_dist() -> f64 {
-    let uniform_rand: f64 = rand::random_range(0.0..1.0);
+pub fn random_cos_dist(rng: &mut fastrand::Rng) -> f64 {
+    let uniform_rand: f64 = random_range(0.0..1.0, rng);
     uniform_rand.asin()
 }
 
 #[inline]
-pub fn random_cosine_direction(normal: Vec3) -> Vec3 {
-    let azimuth: f64 = rand::random_range(0.0..(std::f64::consts::PI * 2.0));
-    let zenith = random_cos_dist();
+pub fn random_cosine_direction(normal: Vec3, rng: &mut fastrand::Rng) -> Vec3 {
+    let azimuth: f64 = random_range(0.0..(std::f64::consts::PI * 2.0), rng);
+    let zenith = random_cos_dist(rng);
     let helper = if normal.x.abs() > 0.9 {
         Vec3::new(0.0, 1.0, 0.0)
     } else {
@@ -104,9 +115,9 @@ pub fn random_cosine_direction(normal: Vec3) -> Vec3 {
 }
 
 #[inline]
-pub fn random_in_unit_disk() -> Vec3 {
+pub fn random_in_unit_disk(rng: &mut fastrand::Rng) -> Vec3 {
     loop {
-        let point = Vec3::new(rand::random_range(-1.0..1.0), rand::random_range(-1.0..1.0), 0.0);
+        let point = Vec3::new(random_range(-1.0..1.0, rng), random_range(-1.0..1.0, rng), 0.0);
         if point.length_squared() < 1.0 {
             return point;
         }

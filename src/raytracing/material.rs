@@ -1,10 +1,10 @@
 use crate::color::Col3f64;
-use crate::random::{random_cosine_direction, random_on_unit_sphere_above_normal, random_unit_vector};
+use crate::random::*;
 use crate::raytracing::hittable::*;
 use crate::raytracing::ray::*;
 
 pub trait Material {
-    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray) -> bool;
+    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray, rng: &mut fastrand::Rng) -> bool;
 }
 
 pub struct Lambertian {
@@ -20,9 +20,9 @@ impl Lambertian {
 
 impl Material for Lambertian {
     #[inline]
-    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray) -> bool {
+    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray, rng: &mut fastrand::Rng) -> bool {
         //let scatter_direction = random_on_unit_sphere_above_normal(hit_record.normal);
-        let scatter_direction = random_cosine_direction(hit_record.normal);
+        let scatter_direction = random_cosine_direction(hit_record.normal, rng);
         *scattered = Ray::new(hit_record.point, scatter_direction);
         *attenuation = self.albedo;
         true
@@ -46,9 +46,9 @@ impl Metal {
 
 impl Material for Metal {
     #[inline]
-    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray) -> bool {
+    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray, rng: &mut fastrand::Rng) -> bool {
         let mut reflected = ray_in.direction.reflect(hit_record.normal);
-        reflected = reflected.normalized() + (self.fuzz * random_unit_vector());
+        reflected = reflected.normalized() + (self.fuzz * random_unit_vector(rng));
         *scattered = Ray::new(hit_record.point, reflected);
         *attenuation = self.albedo;
         scattered.direction.dot(hit_record.normal) > 0.0
@@ -75,7 +75,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray) -> bool {
+    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray, rng: &mut fastrand::Rng) -> bool {
         *attenuation = Col3f64::new(1.0, 1.0, 1.0);
         let refractive_index = if hit_record.front_face {
             1.0 / self.refraction_index // entering from air
@@ -88,7 +88,7 @@ impl Material for Dielectric {
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
         let cannot_refract = refractive_index * sin_theta > 1.0;
-        let direction = if cannot_refract || Dielectric::reflectance(cos_theta, refractive_index) > rand::random_range(0.0..1.0) {
+        let direction = if cannot_refract || Dielectric::reflectance(cos_theta, refractive_index) > random_range(0.0..1.0, rng) {
             unit_direction.reflect(hit_record.normal)
         } else {
             unit_direction.refract(hit_record.normal, refractive_index)
