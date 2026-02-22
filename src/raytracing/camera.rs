@@ -139,7 +139,7 @@ impl Camera {
     }
 
     pub fn render(&mut self, scene_objects: Arc<dyn Hittable>) {
-        let mut rng = fastrand::Rng::new();
+        //let mut rng = fastrand::Rng::new();
         init_progress_bar(self.viewport.data.len());
         self.initialize();
         //let scene_objects = Arc::new(scene_objects);
@@ -149,7 +149,7 @@ impl Camera {
                 inc_progress_bar();
                 let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
                 for sample in 0..self.samples_per_pixel {
-                    let ray = self.get_ray(x, y, &mut rng);
+                    let ray = self.get_ray(x, y);
                     //pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
                 }
                 pixel_color *= pixel_samples_scale;
@@ -172,14 +172,14 @@ impl Camera {
         init_progress_bar(num_chunks);
         img.data.par_chunks_mut(chunk_size).enumerate().for_each(|(chunk_number, row)|{
             for i in 0..row.len() {
-                let mut rng = fastrand::Rng::new();
+                //let mut rng = fastrand::Rng::new();
                 let index =  chunk_number * chunk_size + i;
                 let y = index / img.width;
                 let x = index % img.width;
                 let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
                 for sample in 0..self.samples_per_pixel {
-                    let ray = self.get_ray(x, y, &mut rng);
-                    pixel_color += self.ray_color(ray, scene_objects, self.max_depth, &mut rng);
+                    let ray = self.get_ray(x, y);
+                    pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
                 }
                 pixel_color *= pixel_samples_scale;
                 row[i] = linear_to_srgb(pixel_color);
@@ -203,8 +203,8 @@ impl Camera {
             let x = index % img.width;
             let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
             for sample in 0..self.samples_per_pixel {
-                let ray = self.get_ray(x, y, &mut rng);
-                pixel_color += self.ray_color(ray, scene_objects, self.max_depth, &mut rng);
+                let ray = self.get_ray(x, y);
+                pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
             }
             pixel_color *= pixel_samples_scale;
             *pixel = linear_to_gamma(pixel_color);
@@ -214,7 +214,7 @@ impl Camera {
         self.viewport = img;
     }
 
-    fn ray_color(&self, ray: Ray, scene_objects: &impl Hittable, depth: usize, rng: &mut fastrand::Rng) -> Vec3{
+    fn ray_color(&self, ray: Ray, scene_objects: &impl Hittable, depth: usize) -> Vec3{
         if depth <= 0 {
             return Col3f64::new(0.0, 0.0, 0.0);
         }
@@ -224,8 +224,8 @@ impl Camera {
             let mut scattered: Ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
             let mut attenuation: Col3f64 = Col3f64::new(0.0, 0.0, 0.0);
             let mat = hit_record.mat.clone();
-            if mat.unwrap().scatter(ray, &hit_record, &mut attenuation, &mut scattered, rng) {
-                return attenuation * self.ray_color(scattered, scene_objects, depth - 1, rng);
+            if mat.unwrap().scatter(ray, &hit_record, &mut attenuation, &mut scattered) {
+                return attenuation * self.ray_color(scattered, scene_objects, depth - 1);
             }
             return Col3f64::new(0.0, 0.0, 0.0);
         }
@@ -234,22 +234,22 @@ impl Camera {
         return (1.0 - a) * Vec3::new(1.0, 1.0, 1.0) + a * Vec3::new(0.5, 0.7, 1.0);
     }
 
-    fn get_ray(&self, i: usize, j: usize, rng: &mut fastrand::Rng) -> Ray {
-        let offset = sample_square(rng);
+    fn get_ray(&self, i: usize, j: usize) -> Ray {
+        let offset = sample_square();
         let pixel_sample = self.pixel00_center
         + (i as f64 + offset.x) * self.pixel_delta_u
         + (j as f64 + offset.y) * self.pixel_delta_v;
         let ray_origin = if self.defocus_angle <= 0.0 {
             self.position
         } else {
-            self.defocus_disk_sample(rng)
+            self.defocus_disk_sample()
         };
         let ray_direction = pixel_sample - ray_origin;
         Ray::new(ray_origin, ray_direction)
     }
 
-    fn defocus_disk_sample(&self, rng: &mut fastrand::Rng) -> Vec3 {
-        let point = random_in_unit_disk(rng);
+    fn defocus_disk_sample(&self) -> Vec3 {
+        let point = random_in_unit_disk();
         self.position + point.x * self.defocus_disk_u + point.y * self.defocus_disk_v
     }
 }
