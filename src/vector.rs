@@ -1,21 +1,22 @@
 use std::ops::*;
 use std::ops;
+use num_traits::{ Float, NumAssign, NumCast };
 
 #[derive(Copy, Clone, Debug)]
-pub struct Vec3 {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64
+pub struct Vec3<T> {
+    pub x: T,
+    pub y: T,
+    pub z: T
 }
 
-impl Vec3
+impl<T: Float + NumAssign> Vec3<T>
 {
     #[inline]
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
+    pub fn new(x: T, y: T, z: T) -> Self {
         Self { x, y, z }
     }
     #[inline]
-    pub fn dot(&self, other: Self) -> f64 {
+    pub fn dot(&self, other: Self) -> T {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
     #[inline]
@@ -28,33 +29,33 @@ impl Vec3
     }
 
     #[inline]
-    pub fn length_squared(&self) -> f64 {
+    pub fn length_squared(&self) -> T {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
 
     #[inline]
-    pub fn length(&self) -> f64 {
+    pub fn length(&self) -> T {
         self.length_squared().sqrt()
     }
 
     #[inline]
     pub fn normalized(&self) -> Self {
-        (1.0 / self.length()) * self.clone()
+        (T::one() / self.length()) * self.clone()
     }
 
     #[inline]
     pub fn normalize(&mut self) {
-        let scalar = 1.0 / self.length();
+        let scalar = T::one() / self.length();
         self.scale(scalar);
     }
 
     #[inline]
-    pub fn scale(&mut self, scalar: f64) {
+    pub fn scale(&mut self, scalar: T) {
         *self *= scalar;
     }
 
     #[inline]
-    pub fn scaled(&self, scalar: f64) -> Self {
+    pub fn scaled(&self, scalar: T) -> Self {
         *self * scalar
     }
 
@@ -110,12 +111,12 @@ impl Vec3
     }
 
     #[inline]
-    pub fn reflect(&self, normal: Vec3) -> Vec3 {
+    pub fn reflect(&self, normal: Self) -> Self {
         *self - 2.0 * self.dot(normal) * normal
     }
 
     #[inline]
-    pub fn refract(&self, normal: Vec3, etai_over_etat: f64) -> Vec3 {
+    pub fn refract(&self, normal: Self, etai_over_etat: f64) -> Self {
         let cos_theta = f64::min((-*self).dot(normal), 1.0);
         let r_out_perp = etai_over_etat * (*self + cos_theta * normal);
         let r_out_parallel = -(1.0 - r_out_perp.length_squared()).abs().sqrt() * normal;
@@ -124,10 +125,10 @@ impl Vec3
 }
 
 
-impl ops::Add<Vec3> for Vec3 {
-    type Output = Vec3;
+impl<T: Float + NumAssign> ops::Add<Vec3<T>> for Vec3<T> {
+    type Output = Vec3<T>;
     #[inline]
-    fn add(self, _rhs: Vec3) -> Vec3 {
+    fn add(self, _rhs: Vec3<T>) -> Vec3<T> {
         Vec3 {
             x: self.x + _rhs.x,
             y: self.y + _rhs.y,
@@ -136,10 +137,10 @@ impl ops::Add<Vec3> for Vec3 {
     }
 }
 
-impl ops::Sub<Vec3> for Vec3 {
-    type Output = Vec3;
+impl<T: Float + NumAssign> ops::Sub<Vec3<T>> for Vec3<T> {
+    type Output = Vec3<T>;
     #[inline]
-    fn sub(self, _rhs: Vec3) -> Vec3 {
+    fn sub(self, _rhs: Vec3<T>) -> Vec3<T> {
         Vec3 {
             x: self.x - _rhs.x,
             y: self.y - _rhs.y,
@@ -148,10 +149,10 @@ impl ops::Sub<Vec3> for Vec3 {
     }
 }
 
-impl ops::Mul<f64> for Vec3 {
-    type Output = Vec3;
+impl<T: Float + NumAssign> ops::Mul<T> for Vec3<T> {
+    type Output = Vec3<T>;
     #[inline]
-    fn mul(self, _rhs: f64) -> Vec3 {
+    fn mul(self, _rhs: T) -> Vec3<T> {
         Vec3 {
             x: self.x * _rhs,
             y: self.y * _rhs,
@@ -160,10 +161,10 @@ impl ops::Mul<f64> for Vec3 {
     }
 }
 
-impl ops::Mul<Vec3> for f64 {
-    type Output = Vec3;
+impl<T: Float + NumAssign> ops::Mul<Vec3<T>> for T {
+    type Output = Vec3<T>;
     #[inline]
-    fn mul(self, _rhs: Vec3) -> Vec3 {
+    fn mul(self, _rhs: Vec3<T>) -> Vec3<T> {
         Vec3 {
             x: self * _rhs.x,
             y: self * _rhs.y,
@@ -172,10 +173,10 @@ impl ops::Mul<Vec3> for f64 {
     }
 }
 
-impl ops::Div<f64> for Vec3 {
-    type Output = Vec3;
+impl<T: Float + NumAssign> ops::Div<T> for Vec3<T> {
+    type Output = Vec3<T>;
     #[inline]
-    fn div(self, _rhs: f64) -> Vec3 {
+    fn div(self, _rhs: T) -> Vec3<T> {
         Vec3 {
             x: self.x / _rhs,
             y: self.y / _rhs,
@@ -184,38 +185,38 @@ impl ops::Div<f64> for Vec3 {
     }
 }
 
-impl ops::AddAssign<Vec3> for Vec3 {
+impl<T: Float + NumAssign> ops::AddAssign<Vec3<T>> for Vec3<T> {
     #[inline]
     fn add_assign(&mut self, other: Self) {
         *self = *self + other;
     }
 }
 
-impl ops::SubAssign<Vec3> for Vec3 {
+impl<T: Float + NumAssign> ops::SubAssign<Vec3<T>> for Vec3<T> {
     #[inline]
     fn sub_assign(&mut self, other: Self) {
         *self = *self - other;
     }
 }
 
-impl ops::MulAssign<f64> for Vec3 {
+impl<T: Float + NumAssign> ops::MulAssign<T> for Vec3<T> {
     #[inline]
-    fn mul_assign(&mut self, scalar: f64) {
+    fn mul_assign(&mut self, scalar: T) {
         *self = *self * scalar;
     }
 }
 
-impl ops::DivAssign<f64> for Vec3 {
+impl<T: Float + NumAssign> ops::DivAssign<T> for Vec3<T> {
     #[inline]
-    fn div_assign(&mut self, scalar: f64) {
+    fn div_assign(&mut self, scalar: T) {
         *self = *self / scalar;
     }
 }
 
-impl ops::Neg for Vec3 {
-    type Output = Vec3;
+impl<T: Float + NumAssign> ops::Neg for Vec3<T> {
+    type Output = Vec3<T>;
     #[inline]
-    fn neg(self) -> Vec3 {
+    fn neg(self) -> Vec3<T> {
         Vec3 {
             x: -self.x,
             y: -self.y,
@@ -248,12 +249,12 @@ impl Add<Vec2i> for Vec2i {
     }
 }
 
-impl From<Vec3> for Vec2i {
+impl<T: Float + NumAssign + NumCast> From<Vec3<T>> for Vec2i {
     #[inline]
-    fn from(vec: Vec3) -> Self {
+    fn from(vec: Vec3<T>) -> Self {
         Self {
-            x: vec.x as i32,
-            y: vec.y as i32,
+            x: vec.x.to_i32().unwrap(),
+            y: vec.y.to_i32().unwrap(),
         }
     }
 }

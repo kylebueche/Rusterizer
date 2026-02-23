@@ -1,7 +1,7 @@
 use std::ops;
 use crate::vector::*;
 
-pub type Col3f64 = Vec3;
+pub type Col3f64<T> = Vec3<T>;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Col3u8 {
@@ -35,7 +35,7 @@ impl Col3u8 {
 */
 
 
-impl Col3f64 {
+impl<T: Scalar> Col3f64<T> {
     pub fn white() -> Self {
         Self::new(1.0, 1.0, 1.0)
     }

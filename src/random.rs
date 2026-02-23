@@ -13,7 +13,7 @@ pub fn remap(t: f64, a: f64, b: f64) -> f64 {
 }
 
 #[inline]
-pub fn random_vector_in_unit_sphere() -> Vec3 {
+pub fn random_vector_in_unit_sphere<T>() -> Vec3<T> {
     let mut sample = Vec3 {
         x: random_range(-1.0..1.0),
         y: random_range(-1.0..1.0),
