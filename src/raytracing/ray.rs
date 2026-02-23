@@ -4,6 +4,7 @@ use crate::vector::Vec3;
 pub struct Ray {
     pub origin: Vec3,
     pub direction: Vec3,
+    pub time: f64,
 }
 
 impl Ray {
@@ -11,7 +12,12 @@ impl Ray {
         Self {
             origin,
             direction,
+            time: 0.0,
         }
+    }
+
+    pub fn with_time(origin: Vec3, direction: Vec3, time: f64) -> Self {
+        Self { origin, direction, time }
     }
 
     pub fn at(&self, t: f64) -> Vec3 {

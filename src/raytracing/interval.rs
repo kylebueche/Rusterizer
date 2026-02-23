@@ -13,6 +13,11 @@ impl Interval {
         t >= self.lower_bound && t <= self.upper_bound
     }
 
+    pub fn expand(&self, delta: f64) -> Self {
+        let padding = delta / 2.0;
+        Interval::new(self.lower_bound - padding, self.upper_bound + padding)
+    }
+
     #[expect(unused)]
     pub fn size(&self) -> f64 {
         self.upper_bound - self.lower_bound
@@ -24,7 +29,7 @@ impl Interval {
     }
 
     #[expect(unused)]
-    const EMPTY: Interval = Interval::new(f64::INFINITY, f64::NEG_INFINITY);
+    pub const EMPTY: Interval = Interval::new(f64::INFINITY, f64::NEG_INFINITY);
     #[expect(unused)]
-    const UNIVERSE: Interval = Interval::new(f64::NEG_INFINITY, f64::INFINITY);
+    pub const UNIVERSE: Interval = Interval::new(f64::NEG_INFINITY, f64::INFINITY);
 }
