@@ -2,6 +2,8 @@ use std::ops::*;
 use std::ops;
 use num_traits::{ Float, NumAssign, NumCast };
 
+trait Scalar : Float + NumAssign + NumCast {}
+
 #[derive(Copy, Clone, Debug)]
 pub struct Vec3<T> {
     pub x: T,
@@ -9,7 +11,7 @@ pub struct Vec3<T> {
     pub z: T
 }
 
-impl<T: Float + NumAssign> Vec3<T>
+impl<T: Scalar> Vec3<T>
 {
     #[inline]
     pub fn new(x: T, y: T, z: T) -> Self {
@@ -112,12 +114,12 @@ impl<T: Float + NumAssign> Vec3<T>
 
     #[inline]
     pub fn reflect(&self, normal: Self) -> Self {
-        *self - 2.0 * self.dot(normal) * normal
+        *self - T::from(2.0) * self.dot(normal) * normal
     }
 
     #[inline]
-    pub fn refract(&self, normal: Self, etai_over_etat: f64) -> Self {
-        let cos_theta = f64::min((-*self).dot(normal), 1.0);
+    pub fn refract(&self, normal: Self, etai_over_etat: T) -> Self {
+        let cos_theta = T::min((-*self).dot(normal), 1.0);
         let r_out_perp = etai_over_etat * (*self + cos_theta * normal);
         let r_out_parallel = -(1.0 - r_out_perp.length_squared()).abs().sqrt() * normal;
         r_out_perp + r_out_parallel
@@ -125,7 +127,7 @@ impl<T: Float + NumAssign> Vec3<T>
 }
 
 
-impl<T: Float + NumAssign> ops::Add<Vec3<T>> for Vec3<T> {
+impl<T: Scalar> ops::Add<Vec3<T>> for Vec3<T> {
     type Output = Vec3<T>;
     #[inline]
     fn add(self, _rhs: Vec3<T>) -> Vec3<T> {
@@ -137,7 +139,7 @@ impl<T: Float + NumAssign> ops::Add<Vec3<T>> for Vec3<T> {
     }
 }
 
-impl<T: Float + NumAssign> ops::Sub<Vec3<T>> for Vec3<T> {
+impl<T: Scalar> ops::Sub<Vec3<T>> for Vec3<T> {
     type Output = Vec3<T>;
     #[inline]
     fn sub(self, _rhs: Vec3<T>) -> Vec3<T> {
@@ -149,7 +151,7 @@ impl<T: Float + NumAssign> ops::Sub<Vec3<T>> for Vec3<T> {
     }
 }
 
-impl<T: Float + NumAssign> ops::Mul<T> for Vec3<T> {
+impl<T: Scalar> ops::Mul<T> for Vec3<T> {
     type Output = Vec3<T>;
     #[inline]
     fn mul(self, _rhs: T) -> Vec3<T> {
@@ -161,7 +163,7 @@ impl<T: Float + NumAssign> ops::Mul<T> for Vec3<T> {
     }
 }
 
-impl<T: Float + NumAssign> ops::Mul<Vec3<T>> for T {
+impl<T: Scalar> ops::Mul<Vec3<T>> for T {
     type Output = Vec3<T>;
     #[inline]
     fn mul(self, _rhs: Vec3<T>) -> Vec3<T> {
@@ -173,7 +175,7 @@ impl<T: Float + NumAssign> ops::Mul<Vec3<T>> for T {
     }
 }
 
-impl<T: Float + NumAssign> ops::Div<T> for Vec3<T> {
+impl<T: Scalar> ops::Div<T> for Vec3<T> {
     type Output = Vec3<T>;
     #[inline]
     fn div(self, _rhs: T) -> Vec3<T> {
@@ -185,35 +187,35 @@ impl<T: Float + NumAssign> ops::Div<T> for Vec3<T> {
     }
 }
 
-impl<T: Float + NumAssign> ops::AddAssign<Vec3<T>> for Vec3<T> {
+impl<T: Scalar> ops::AddAssign<Vec3<T>> for Vec3<T> {
     #[inline]
     fn add_assign(&mut self, other: Self) {
         *self = *self + other;
     }
 }
 
-impl<T: Float + NumAssign> ops::SubAssign<Vec3<T>> for Vec3<T> {
+impl<T: Scalar> ops::SubAssign<Vec3<T>> for Vec3<T> {
     #[inline]
     fn sub_assign(&mut self, other: Self) {
         *self = *self - other;
     }
 }
 
-impl<T: Float + NumAssign> ops::MulAssign<T> for Vec3<T> {
+impl<T: Scalar> ops::MulAssign<T> for Vec3<T> {
     #[inline]
     fn mul_assign(&mut self, scalar: T) {
         *self = *self * scalar;
     }
 }
 
-impl<T: Float + NumAssign> ops::DivAssign<T> for Vec3<T> {
+impl<T: Scalar> ops::DivAssign<T> for Vec3<T> {
     #[inline]
     fn div_assign(&mut self, scalar: T) {
         *self = *self / scalar;
     }
 }
 
-impl<T: Float + NumAssign> ops::Neg for Vec3<T> {
+impl<T: Scalar> ops::Neg for Vec3<T> {
     type Output = Vec3<T>;
     #[inline]
     fn neg(self) -> Vec3<T> {
@@ -249,7 +251,7 @@ impl Add<Vec2i> for Vec2i {
     }
 }
 
-impl<T: Float + NumAssign + NumCast> From<Vec3<T>> for Vec2i {
+impl<T: Scalar> From<Vec3<T>> for Vec2i {
     #[inline]
     fn from(vec: Vec3<T>) -> Self {
         Self {
