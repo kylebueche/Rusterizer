@@ -5,5 +5,6 @@ pub mod camera;
 pub mod implicits;
 pub mod material;
 mod aabb;
+mod bvh;
 
 

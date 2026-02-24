@@ -4,6 +4,7 @@ use crate::raytracing::interval::*;
 use std::sync::Arc;
 use std::rc::Rc;
 use crate::raytracing::material::*;
+use crate::raytracing::aabb::*;
 
 #[derive(Clone)]
 pub struct HitRecord {
@@ -32,19 +33,26 @@ impl HitRecord {
 
 pub trait Hittable: Send + Sync {
     fn first_hit_on_interval(&self, ray: Ray, interval: &mut Interval, hit_record: &mut HitRecord) -> bool;
+    fn bounding_box(&self) -> AABB;
 }
+
 
 // can't derive traits? weird, has to do with dyn
 pub struct HittableList {
-    hittables: Vec<Arc<dyn Hittable>>
+    hittables: Vec<Arc<dyn Hittable>>,
+    bbox: AABB,
 }
 
 impl HittableList {
     pub fn new() -> HittableList {
-        HittableList { hittables: vec![] }
+        HittableList {
+            hittables: vec![],
+            bbox: AABB::EMPTY,
+        }
     }
 
     pub fn add(&mut self, hittable: Arc<dyn Hittable>) {
+        self.bbox = AABB::from_aabbs(self.bbox, hittable.bounding_box());
         self.hittables.push(hittable);
     }
 
@@ -67,20 +75,26 @@ impl Hittable for HittableList {
         }
         hit_anything
     }
+    fn bounding_box(&self) -> AABB {
+        AABB::EMPTY
+    }
 }
 
 pub struct HittableStaticList<T: Hittable> {
     hittables: Vec<T>,
+    bbox: AABB,
 }
 
 impl<T: Hittable> HittableStaticList<T> {
     pub fn new() -> HittableStaticList<T> {
         HittableStaticList {
-            hittables: vec![]
+            hittables: vec![],
+            bbox: AABB::EMPTY,
         }
     }
     
     pub fn add(&mut self, hittable: T) {
+        self.bbox = AABB::from_aabbs(self.bbox, hittable.bounding_box());
         self.hittables.push(hittable);
     }
     
@@ -97,5 +111,8 @@ impl<T: Hittable> Hittable for HittableStaticList<T> {
             }
         }
         hit_anything
+    }
+    fn bounding_box(&self) -> AABB {
+        AABB::EMPTY
     }
 }

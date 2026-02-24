@@ -7,6 +7,7 @@ use crate::vector::Vec3;
 use crate::Arc;
 use crate::raytracing::material::Material;
 use std::sync::Mutex;
+use crate::raytracing::aabb::AABB;
 
 #[derive(Clone)]
 pub struct Sphere {
@@ -78,6 +79,11 @@ impl Hittable for Sphere {
         }
 
         hit_sphere
+    }
+
+    fn bounding_box(&self) -> AABB {
+        let offset = Vec3::new(self.radius, self.radius, self.radius);
+        AABB::from_corners(self.position.at(0.0) - offset, self.position.at(1.0) + offset)
     }
 }
 
