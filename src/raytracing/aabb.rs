@@ -47,7 +47,7 @@ impl AABB {
         }
     }
 
-    fn hit(&self, ray: Ray, ray_t: &mut Interval) -> bool {
+    pub fn hit(&self, ray: Ray, ray_t: &mut Interval) -> bool {
         let ray_pos = ray.origin;
         let ray_dir = ray.direction;
         if !Self::axis_overlap_check(ray_pos.x, ray_dir.x, self.x, ray_t) {
