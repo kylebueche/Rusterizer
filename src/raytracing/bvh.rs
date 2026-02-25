@@ -3,25 +3,94 @@ use crate::raytracing::hittable::*;
 use crate::raytracing::interval::*;
 use crate::raytracing::ray::*;
 use std::sync::Arc;
+use crate::random::*;
 
-struct BVHNode {
+pub struct BVHNode {
     pub bbox: AABB,
     pub left: Arc<dyn Hittable>,
     pub right: Arc<dyn Hittable>,
 }
 
 impl BVHNode {
-    pub fn new(list: HittableList) -> Self {
-        Self {
+    pub fn new(list: &mut HittableList) -> Self {
+        let len = list.hittables.len();
+        Self::new_from_indices(&mut list.hittables, 0, len)
+    }
 
+    pub fn new_from_indices(objects: &mut Vec<Arc<dyn Hittable>>, start: usize, end: usize) -> Self {
+        let axis = random_int(0..3);
+        let comparator = if axis == 0 {
+            Self::box_x_compare
+        } else if axis == 1 {
+            Self::box_y_compare
+        } else {
+            Self::box_z_compare
+        };
+
+        let span = end - start;
+        let (left, right) = if span == 1 {
+            (objects[start].clone(), objects[start].clone())
+        } else if span == 2 {
+            (objects[start].clone(), objects[start + 1].clone())
+        } else {
+            objects[start..end].sort_by(comparator);
+
+            let mid = start + span / 2;
+            let left: Arc<dyn Hittable> = Arc::new(BVHNode::new_from_indices(objects, start, mid));
+            let right: Arc<dyn Hittable> = Arc::new(BVHNode::new_from_indices(objects, mid, end));
+            (left, right)
+        };
+
+        let left_bbox = left.bounding_box();
+        let right_bbox = right.bounding_box();
+        Self {
+            left: left,
+            right: right,
+            bbox: AABB::from_aabbs(left_bbox, right_bbox),
         }
     }
 
-    pub fn
+    fn box_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>, axis_index: i32) -> std::cmp::Ordering {
+        let a_axis_interval = *a.bounding_box().axis_interval(axis_index);
+        let b_axis_interval = *b.bounding_box().axis_interval(axis_index);
+        if a_axis_interval.lower_bound < b_axis_interval.lower_bound {
+            std::cmp::Ordering::Less
+        } else {
+            std::cmp::Ordering::Greater
+        }
+    }
+
+    fn box_x_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>) -> std::cmp::Ordering {
+        Self::box_compare(a, b, 0)
+    }
+    fn box_y_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>) -> std::cmp::Ordering {
+        Self::box_compare(a, b, 1)
+    }
+    fn box_z_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>) -> std::cmp::Ordering {
+        Self::box_compare(a, b, 2)
+    }
 }
 
 impl Hittable for BVHNode {
     fn first_hit_on_interval(&self, ray: Ray, interval: &mut Interval, hit_record: &mut HitRecord) -> bool {
-        if !self.bbox.hit()
+        if !self.bbox.hit(ray, interval) {
+            return false;
+        }
+
+        let hit_left = self.left.first_hit_on_interval(ray, interval, hit_record);
+        let right_interval_upper_bound = if hit_left {
+            hit_record.t
+        } else {
+            interval.upper_bound
+        };
+        let mut right_interval = Interval::new(interval.lower_bound, right_interval_upper_bound);
+        let hit_right = self.right.first_hit_on_interval(ray, &mut right_interval, hit_record);
+        *interval = right_interval;
+
+        hit_left || hit_right
+    }
+
+    fn bounding_box(&self) -> AABB {
+        self.bbox
     }
 }

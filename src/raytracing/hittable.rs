@@ -39,7 +39,7 @@ pub trait Hittable: Send + Sync {
 
 // can't derive traits? weird, has to do with dyn
 pub struct HittableList {
-    hittables: Vec<Arc<dyn Hittable>>,
+    pub hittables: Vec<Arc<dyn Hittable>>,
     bbox: AABB,
 }
 

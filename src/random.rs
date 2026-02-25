@@ -8,6 +8,11 @@ pub fn random_range(range: std::ops::Range<f64>) -> f64 {
 }
 
 #[inline]
+pub fn random_int(range: std::ops::Range<i32>) -> i32 {
+    fastrand::i32(range)
+}
+
+#[inline]
 pub fn remap(t: f64, a: f64, b: f64) -> f64 {
     t * (b - a) + a
 }

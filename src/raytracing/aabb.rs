@@ -65,13 +65,15 @@ impl AABB {
         let adinv = 1.0 / ray_dir;
         let mut t0 = (axis.lower_bound - ray_pos) * adinv;
         let mut t1 = (axis.upper_bound - ray_pos) * adinv;
-        if t0 > t1 {
-            std::mem::swap(&mut t0, &mut t1);
+        if t0 < t1 {
+            if t0 > ray_t.lower_bound { ray_t.lower_bound = t0; }
+            if t1 < ray_t.upper_bound { ray_t.upper_bound = t1; }
+        } else {
+            if t0 > ray_t.lower_bound { ray_t.lower_bound = t1; }
+            if t1 < ray_t.upper_bound { ray_t.upper_bound = t0; }
         }
-        if t0 > ray_t.lower_bound { ray_t.lower_bound = t0; }
-        if t1 < ray_t.upper_bound { ray_t.upper_bound = t1; }
 
-        if ray_t.upper_bound < ray_t.lower_bound {
+        if ray_t.upper_bound <= ray_t.lower_bound {
             return false
         }
         true
