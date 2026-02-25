@@ -11,8 +11,8 @@ impl Interval {
 
     pub fn from_intervals(a: Interval, b: Interval) -> Self {
         Self {
-            lower_bound: if a.lower_bound < b.lower_bound { a.lower_bound } else { b.lower_bound },
-            upper_bound: if a.upper_bound < b.upper_bound { a.upper_bound } else { b.upper_bound },
+            lower_bound: if a.lower_bound <= b.lower_bound { a.lower_bound } else { b.lower_bound },
+            upper_bound: if a.upper_bound >= b.upper_bound { a.upper_bound } else { b.upper_bound },
         }
     }
 

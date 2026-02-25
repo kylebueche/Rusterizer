@@ -75,7 +75,7 @@ fn homework_3_render_test() {
 
     let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
 
-    camera.samples_per_pixel = 5;
+    camera.samples_per_pixel = 50;
     camera.max_depth = 50;
 
     camera.field_of_view = 35.0;

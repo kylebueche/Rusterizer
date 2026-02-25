@@ -83,7 +83,11 @@ impl Hittable for Sphere {
 
     fn bounding_box(&self) -> AABB {
         let offset = Vec3::new(self.radius, self.radius, self.radius);
-        AABB::from_corners(self.position.at(0.0) - offset, self.position.at(1.0) + offset)
+        let pos_start = self.position.at(0.0);
+        let pos_end = self.position.at(1.0);
+        let bbox_start = AABB::from_corners(pos_start - offset, pos_start + offset);
+        let bbox_end = AABB::from_corners(pos_end - offset, pos_end + offset);
+        AABB::from_aabbs(bbox_start, bbox_end)
     }
 }
 

@@ -85,7 +85,7 @@ impl Hittable for BVHNode {
         };
         let mut right_interval = Interval::new(interval.lower_bound, right_interval_upper_bound);
         let hit_right = self.right.first_hit_on_interval(ray, &mut right_interval, hit_record);
-        *interval = right_interval;
+        //*interval = right_interval;
 
         hit_left || hit_right
     }
