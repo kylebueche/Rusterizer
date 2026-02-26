@@ -2,6 +2,8 @@ use crate::raytracing::aabb::*;
 use crate::raytracing::hittable::*;
 use crate::raytracing::interval::*;
 use crate::raytracing::ray::*;
+use crate::image::Image;
+use crate::raytracing::camera::Camera;
 use std::sync::Arc;
 use crate::random::*;
 
@@ -69,6 +71,10 @@ impl BVHNode {
     fn box_z_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>) -> std::cmp::Ordering {
         Self::box_compare(a, b, 2)
     }
+
+    //pub fn draw (&self, camera: &mut Camera) {
+    //    image.
+    //}
 }
 
 impl Hittable for BVHNode {
@@ -78,13 +84,13 @@ impl Hittable for BVHNode {
         }
 
         let hit_left = self.left.first_hit_on_interval(ray, interval, hit_record);
-        let right_interval_upper_bound = if hit_left {
-            hit_record.t
-        } else {
-            interval.upper_bound
-        };
-        let mut right_interval = Interval::new(interval.lower_bound, right_interval_upper_bound);
-        let hit_right = self.right.first_hit_on_interval(ray, &mut right_interval, hit_record);
+        //let right_interval_upper_bound = if hit_left {
+        //    hit_record.t
+        //} else {
+        //    interval.upper_bound
+        //};
+        //let mut right_interval = Interval::new(interval.lower_bound, right_interval_upper_bound);
+        let hit_right = self.right.first_hit_on_interval(ray, interval, hit_record);
         //*interval = right_interval;
 
         hit_left || hit_right

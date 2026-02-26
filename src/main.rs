@@ -73,10 +73,10 @@ fn homework_3_render_test() {
     let material3 = Arc::new(Metal::new(Col3f64::new(0.7, 0.6, 0.5), 0.0));
     world.add(Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, material3)));
 
-    let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
+    let mut camera = Camera::from_aspect_ratio(300, 16.0 / 9.0);
 
-    camera.samples_per_pixel = 50;
-    camera.max_depth = 50;
+    camera.samples_per_pixel = 500;
+    camera.max_depth = 20;
 
     camera.field_of_view = 35.0;
     camera.look_from = Vec3::new(13.0, 2.0, 3.0);

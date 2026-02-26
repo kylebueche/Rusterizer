@@ -35,7 +35,6 @@ impl Interval {
         t > self.lower_bound && t < self.upper_bound
     }
 
-    #[expect(unused)]
     pub const EMPTY: Interval = Interval::new(f64::INFINITY, f64::NEG_INFINITY);
     #[expect(unused)]
     pub const UNIVERSE: Interval = Interval::new(f64::NEG_INFINITY, f64::INFINITY);
