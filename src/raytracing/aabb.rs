@@ -48,13 +48,14 @@ impl AABB {
     }
 
     pub fn hit(&self, ray: Ray, ray_t: &mut Interval) -> bool {
+        let mut ray_t = ray_t.clone();
         let ray_pos = ray.origin;
         let ray_dir = ray.direction;
-        if !Self::axis_overlap_check(ray_pos.x, ray_dir.x, self.x, ray_t) {
+        if !Self::axis_overlap_check(ray_pos.x, ray_dir.x, self.x, &mut ray_t) {
             return false
-        } else if !Self::axis_overlap_check(ray_pos.y, ray_dir.y, self.y, ray_t) {
+        } else if !Self::axis_overlap_check(ray_pos.y, ray_dir.y, self.y, &mut ray_t) {
             return false
-        } else if !Self::axis_overlap_check(ray_pos.z, ray_dir.z, self.z, ray_t) {
+        } else if !Self::axis_overlap_check(ray_pos.z, ray_dir.z, self.z, &mut ray_t) {
             return false
         }
         true
@@ -62,38 +63,35 @@ impl AABB {
 
     #[inline]
     fn axis_overlap_check(ray_pos: f64, ray_dir: f64, axis: Interval, ray_t: &mut Interval) -> bool{
+        if ray_dir == 0.0 {
+            if ray_pos < axis.lower_bound || ray_pos > axis.upper_bound {
+                return false
+            }
+            return true
+        }
+
         let adinv = 1.0 / ray_dir;
         let mut t0 = (axis.lower_bound - ray_pos) * adinv;
         let mut t1 = (axis.upper_bound - ray_pos) * adinv;
-        if t0 < t1 {
-            if t0 > ray_t.lower_bound { ray_t.lower_bound = t0; }
-            if t1 < ray_t.upper_bound { ray_t.upper_bound = t1; }
-        } else {
-            if t0 > ray_t.lower_bound { ray_t.lower_bound = t1; }
-            if t1 < ray_t.upper_bound { ray_t.upper_bound = t0; }
-        }
+        //if t0 < t1 {
+        //    if t0 > ray_t.lower_bound { ray_t.lower_bound = t0; }
+        //    if t1 < ray_t.upper_bound { ray_t.upper_bound = t1; }
+        //} else {
+        //    if t1 > ray_t.lower_bound { ray_t.lower_bound = t1; }
+        //    if t0 < ray_t.upper_bound { ray_t.upper_bound = t0; }
+        //}
 
-        if ray_t.upper_bound <= ray_t.lower_bound {
-            return false
-        }
-        true
+        let t_min_axis = t0.min(t1);
+        let t_max_axis = t0.max(t1);
+        ray_t.lower_bound = ray_t.lower_bound.max(t_min_axis);
+        ray_t.upper_bound = ray_t.upper_bound.min(t_max_axis);
+
+
+
+        //if ray_t.upper_bound <= ray_t.lower_bound {
+        //    return false
+        //}
+        //true
+        ray_t.upper_bound >= ray_t.lower_bound
     }
 }
-/*
-impl Hittable for aabb {
-    fn first_hit_on_interval(&self, ray: Ray, interval: &mut Interval, hit_record: &mut HitRecord) -> bool {
-        let ray_origin = ray.origin;
-        let ray_dir = ray.direction;
-        // x axis
-        let axis = self.x;
-        let adinv = 1.0 / ray_dir.x;
-
-        let mut t0 = (axis.lower_bound - ray.origin.x) * adinv;
-        let mut t1 = (axis.upper_bound - ray.origin.x) * adinv;
-        if t0 < t1 {
-            if t0 > ray_t
-        }
-
-        true
-    }
-}*/

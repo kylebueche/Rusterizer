@@ -44,6 +44,7 @@ pub struct Camera {
     w: Vec3,
     defocus_disk_u: Vec3,
     defocus_disk_v: Vec3,
+    pixel_samples_scale: f64,
 }
 
 impl Camera {
@@ -77,6 +78,7 @@ impl Camera {
             defocus_disk_v: Vec3::new(0.0, 0.0, 0.0),
             // unused:
             field_of_view: 90.0,
+            pixel_samples_scale: 0.1,
         }
     }
 
@@ -111,10 +113,12 @@ impl Camera {
             defocus_disk_v: Vec3::new(0.0, 0.0, 0.0),
             // unused:
             field_of_view: 90.0,
+            pixel_samples_scale: 0.1,
         }
     }
 
     pub fn initialize(&mut self) {
+        self.pixel_samples_scale = 1.0 / self.samples_per_pixel as f64;
         self.position = self.look_from;
         let theta = self.field_of_view.to_radians();
         let h = (theta / 2.0).tan();
@@ -164,7 +168,6 @@ impl Camera {
     }
     pub fn render_threaded(&mut self, scene_objects: &impl Hittable) {
         self.initialize();
-        let pixel_samples_scale = 1.0 / (self.samples_per_pixel as f64);
 
         let mut img = Image::with_dimensions(self.viewport.width, self.viewport.height);
         let num_chunks = img.height;
@@ -172,17 +175,19 @@ impl Camera {
         init_progress_bar(num_chunks);
         img.data.par_chunks_mut(chunk_size).enumerate().for_each(|(chunk_number, row)|{
             for i in 0..row.len() {
-                //let mut rng = fastrand::Rng::new();
                 let index =  chunk_number * chunk_size + i;
-                let y = index / img.width;
-                let x = index % img.width;
-                let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
-                for sample in 0..self.samples_per_pixel {
-                    let ray = self.get_ray(x, y);
-                    pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
-                }
-                pixel_color *= pixel_samples_scale;
-                row[i] = linear_to_srgb(pixel_color);
+                //self.pixel_kernel(index, img.width, scene_objects, &mut row[i]);
+                self.convergent_kernel(0.999, index, img.width, scene_objects, &mut row[i]);
+                //let y = index / img.width;
+                //let x = index % img.width;
+                //let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
+                //let mut old_color = pixel_color;
+                //for sample in 0..self.samples_per_pixel {
+                //    let ray = self.get_ray(x, y);
+                //    pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
+                //}
+                //pixel_color *= self.pixel_samples_scale;
+                //row[i] = linear_to_srgb(pixel_color);
             }
             inc_progress_bar()
 
@@ -198,7 +203,7 @@ impl Camera {
 
         let mut img = Image::with_dimensions(self.viewport.width, self.viewport.height);
         img.data.par_iter_mut().enumerate().for_each(|(index, pixel)| {
-            let mut rng = fastrand::Rng::new();
+            self.pixel_kernel(index, img.width, scene_objects, pixel);
             let y = index / img.width;
             let x = index % img.width;
             let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
@@ -212,6 +217,60 @@ impl Camera {
         });
 
         self.viewport = img;
+    }
+
+    #[inline]
+    fn pixel_kernel(&self, index: usize, width: usize, scene_objects: &impl Hittable, pixel: &mut Col3f64) {
+        let y = index / width;
+        let x = index % width;
+        let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
+        for sample in 0..self.samples_per_pixel {
+            let ray = self.get_ray(x, y);
+            pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
+        }
+        pixel_color *= self.pixel_samples_scale;
+        *pixel = linear_to_srgb(pixel_color);
+    }
+
+    /*
+     * A convergent pixel kernel.
+     * This kernel samples infinitely until a certain proportion of the most recent samples
+     * have made no change to the pixel value.
+     * Each pixel will be sampled at least self.samples_per_pixel times
+     * Then, if the ratio is 0.2, samples will be added until the most recent 20% of samples
+     * change the pixel by less than 1.0/255.0 in each channel.
+     * Due to the nature of Monte Carlo integration, convergence is guaranteed for
+     * any convergence ratio in [0.0, 1.0). Convergence is impossible for [1.0, inf), or (-inf, 0.0)
+     */
+    #[inline]
+    fn convergent_kernel(&self, convergence_ratio: f64, index: usize, width: usize, scene_objects: &impl Hittable, pixel: &mut Col3f64) {
+        let y = index / width;
+        let x = index % width;
+        let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
+        let mut old_color = pixel_color;
+        let mut num_samples = 0;
+        let mut num_samples_unchanged = 0;
+        loop {
+            let ray = self.get_ray(x, y);
+            let sample = self.ray_color(ray, scene_objects, self.max_depth);
+            pixel_color += sample;
+            num_samples += 1;
+            let new_color = pixel_color / num_samples as f64;
+            let diff = new_color - old_color;
+            if diff.x.abs() < 1.0 / 255.0 && diff.y.abs() < 1.0 / 255.0 && diff.z.abs() < 1.0 / 255.0 {
+                num_samples_unchanged += 1;
+            } else {
+                num_samples_unchanged = 0;
+                old_color = pixel_color / num_samples as f64;
+            }
+            if (num_samples_unchanged as f64) / (num_samples as f64) > convergence_ratio && num_samples > self.samples_per_pixel {
+                break;
+            }
+            //pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
+        }
+        //pixel_color *= pixel_samples_scale;
+        pixel_color /= num_samples as f64;
+        *pixel = linear_to_srgb(pixel_color);
     }
 
     fn ray_color(&self, ray: Ray, scene_objects: &impl Hittable, depth: usize) -> Vec3{

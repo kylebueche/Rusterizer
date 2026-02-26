@@ -29,9 +29,6 @@ fn main() {
 fn homework_3_render_test() {
     let mut world = HittableList::new();
 
-    let ground_material = Arc::new(Lambertian::new(Col3f64::new(0.5, 0.5, 0.5)));
-    world.add(Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, ground_material)));
-
     for a in -11..11 {
         for b in -11..11 {
             let choose_mat = rand::random_range(0.0..1.0);
@@ -73,10 +70,10 @@ fn homework_3_render_test() {
     let material3 = Arc::new(Metal::new(Col3f64::new(0.7, 0.6, 0.5), 0.0));
     world.add(Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, material3)));
 
-    let mut camera = Camera::from_aspect_ratio(300, 16.0 / 9.0);
+    let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
 
-    camera.samples_per_pixel = 500;
-    camera.max_depth = 20;
+    camera.samples_per_pixel = 100;
+    camera.max_depth = 50;
 
     camera.field_of_view = 35.0;
     camera.look_from = Vec3::new(13.0, 2.0, 3.0);
@@ -86,12 +83,17 @@ fn homework_3_render_test() {
     camera.defocus_angle = 0.6;
     camera.focus_dist = 10.0;
 
-    let world2 = Arc::new(BVHNode::new(&mut world));
-    let mut world3 = HittableList::new();
-    world3.add(world2);
+
+    let ground_material = Arc::new(Lambertian::new(Col3f64::new(0.5, 0.5, 0.5)));
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, ground_material)));
+
+    let world2 = BVHNode::new(&mut world);
+    //let mut world3 = HittableList::new();
+    //world3.add(world2);
+
 
     let time = std::time::Instant::now();
-    camera.render_threaded(&world3);
+    camera.render_threaded(&world2);
     camera.viewport.write_to_file("rt.ppm");
     let time_elapsed = time.elapsed();
     println!();

@@ -25,17 +25,14 @@ impl Interval {
         Interval::new(self.lower_bound - padding, self.upper_bound + padding)
     }
 
-    #[expect(unused)]
     pub fn size(&self) -> f64 {
         self.upper_bound - self.lower_bound
     }
 
-    #[expect(unused)]
     pub fn surrounds(&self, t: f64) -> bool {
         t > self.lower_bound && t < self.upper_bound
     }
 
     pub const EMPTY: Interval = Interval::new(f64::INFINITY, f64::NEG_INFINITY);
-    #[expect(unused)]
     pub const UNIVERSE: Interval = Interval::new(f64::NEG_INFINITY, f64::INFINITY);
 }

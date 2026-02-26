@@ -20,7 +20,7 @@ impl BVHNode {
     }
 
     pub fn new_from_indices(objects: &mut Vec<Arc<dyn Hittable>>, start: usize, end: usize) -> Self {
-        let axis = random_int(0..3);
+        let axis = random_int(0..2);
         let comparator = if axis == 0 {
             Self::box_x_compare
         } else if axis == 1 {
@@ -83,16 +83,10 @@ impl Hittable for BVHNode {
             return false;
         }
 
-        let hit_left = self.left.first_hit_on_interval(ray, interval, hit_record);
-        //let right_interval_upper_bound = if hit_left {
-        //    hit_record.t
-        //} else {
-        //    interval.upper_bound
-        //};
-        //let mut right_interval = Interval::new(interval.lower_bound, right_interval_upper_bound);
-        let hit_right = self.right.first_hit_on_interval(ray, interval, hit_record);
-        //*interval = right_interval;
-
+        let mut interval = interval.clone();
+        let hit_left = self.left.first_hit_on_interval(ray, &mut interval, hit_record);
+        let mut right_interval = Interval::new(interval.lower_bound, if hit_left { hit_record.t } else { interval.upper_bound });
+        let hit_right = self.right.first_hit_on_interval(ray, &mut right_interval, hit_record);
         hit_left || hit_right
     }
 
