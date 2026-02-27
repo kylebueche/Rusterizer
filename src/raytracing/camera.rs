@@ -173,11 +173,18 @@ impl Camera {
         let num_chunks = img.height;
         let chunk_size = img.data.len() / num_chunks;
         init_progress_bar(num_chunks);
+        let mut total_samples = Arc::new(Mutex::new(0.0));
+        let mut peak_samples = Arc::new(Mutex::new(0.0));
         img.data.par_chunks_mut(chunk_size).enumerate().for_each(|(chunk_number, row)|{
+            let mut total_chunk_samples = 0.0;
+            let mut peak = 0.0;
             for i in 0..row.len() {
                 let index =  chunk_number * chunk_size + i;
                 //self.pixel_kernel(index, img.width, scene_objects, &mut row[i]);
-                self.convergent_kernel(0.999, index, img.width, scene_objects, &mut row[i]);
+                let curr_samples= self.convergent_kernel(0.80, index, img.width, scene_objects, &mut row[i]);
+                total_chunk_samples += curr_samples;
+                peak = f64::max(peak, curr_samples);
+
                 //let y = index / img.width;
                 //let x = index % img.width;
                 //let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
@@ -189,11 +196,19 @@ impl Camera {
                 //pixel_color *= self.pixel_samples_scale;
                 //row[i] = linear_to_srgb(pixel_color);
             }
-            inc_progress_bar()
+            inc_progress_bar();
+            let mut samps = total_samples.lock().unwrap();
+            *samps += total_chunk_samples;
+            let mut peaks = peak_samples.lock().unwrap();
+            *peaks += peak;
 
         });
         finalize_progress_bar();
 
+        let samps = total_samples.lock().unwrap();
+        let peak = peak_samples.lock().unwrap();
+        println!("\nDone. {} samples and {} samples per pixel", *samps, *samps / (img.data.len() as f64));
+        println!("{} was the peak number of samples in a pixel", *peak);
         self.viewport = img;
     }
 
@@ -243,7 +258,7 @@ impl Camera {
      * any convergence ratio in [0.0, 1.0). Convergence is impossible for [1.0, inf), or (-inf, 0.0)
      */
     #[inline]
-    fn convergent_kernel(&self, convergence_ratio: f64, index: usize, width: usize, scene_objects: &impl Hittable, pixel: &mut Col3f64) {
+    fn convergent_kernel(&self, convergence_ratio: f64, index: usize, width: usize, scene_objects: &impl Hittable, pixel: &mut Col3f64) -> f64 {
         let y = index / width;
         let x = index % width;
         let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
@@ -266,11 +281,10 @@ impl Camera {
             if (num_samples_unchanged as f64) / (num_samples as f64) > convergence_ratio && num_samples > self.samples_per_pixel {
                 break;
             }
-            //pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
         }
-        //pixel_color *= pixel_samples_scale;
         pixel_color /= num_samples as f64;
         *pixel = linear_to_srgb(pixel_color);
+        num_samples as f64
     }
 
     fn ray_color(&self, ray: Ray, scene_objects: &impl Hittable, depth: usize) -> Vec3{
