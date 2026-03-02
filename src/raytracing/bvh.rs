@@ -20,7 +20,11 @@ impl BVHNode {
     }
 
     pub fn new_from_indices(objects: &mut Vec<Arc<dyn Hittable>>, start: usize, end: usize) -> Self {
-        let axis = random_int(0..2);
+        let mut bbox = AABB::EMPTY;
+        for i in start..end {
+            bbox = AABB::from_aabbs(bbox, objects[i].bounding_box());
+        }
+        let axis = bbox.longest_axis();// random_int(0..2);
         let comparator = if axis == 0 {
             Self::box_x_compare
         } else if axis == 1 {
@@ -43,12 +47,10 @@ impl BVHNode {
             (left, right)
         };
 
-        let left_bbox = left.bounding_box();
-        let right_bbox = right.bounding_box();
         Self {
             left: left,
             right: right,
-            bbox: AABB::from_aabbs(left_bbox, right_bbox),
+            bbox: bbox,
         }
     }
 
@@ -71,6 +73,7 @@ impl BVHNode {
     fn box_z_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>) -> std::cmp::Ordering {
         Self::box_compare(a, b, 2)
     }
+
 
     //pub fn draw (&self, camera: &mut Camera) {
     //    image.

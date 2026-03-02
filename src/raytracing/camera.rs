@@ -180,10 +180,10 @@ impl Camera {
             let mut peak = 0.0;
             for i in 0..row.len() {
                 let index =  chunk_number * chunk_size + i;
-                //self.pixel_kernel(index, img.width, scene_objects, &mut row[i]);
-                let curr_samples= self.convergent_kernel(0.80, index, img.width, scene_objects, &mut row[i]);
-                total_chunk_samples += curr_samples;
-                peak = f64::max(peak, curr_samples);
+                self.pixel_kernel(index, img.width, scene_objects, &mut row[i]);
+                //let curr_samples= self.convergent_kernel(0.80, index, img.width, scene_objects, &mut row[i]);
+                //total_chunk_samples += curr_samples;
+                //peak = f64::max(peak, curr_samples);
 
                 //let y = index / img.width;
                 //let x = index % img.width;
@@ -197,10 +197,10 @@ impl Camera {
                 //row[i] = linear_to_srgb(pixel_color);
             }
             inc_progress_bar();
-            let mut samps = total_samples.lock().unwrap();
-            *samps += total_chunk_samples;
-            let mut peaks = peak_samples.lock().unwrap();
-            *peaks += peak;
+            //let mut samps = total_samples.lock().unwrap();
+            //*samps += total_chunk_samples;
+            //let mut peaks = peak_samples.lock().unwrap();
+            //*peaks += peak;
 
         });
         finalize_progress_bar();
