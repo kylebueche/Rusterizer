@@ -8,11 +8,10 @@ mod mesh;
 mod raytracing;
 mod solid;
 mod random;
-mod threadbatcher;
 
 use std::sync::Arc;
 use std::rc::Rc;
-use crate::color::Col3f64;
+use crate::color::Color;
 use crate::image::*;
 use crate::vector::*;
 use raytracing::camera::*;
@@ -42,13 +41,13 @@ fn homework_3_render_test() {
             if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.8 {
                     // diffuse
-                    let albedo = Col3f64::random() * Col3f64::random();
+                    let albedo = Color::random() * Color::random();
                     let sphere_material = Arc::new(Lambertian::new(albedo));
                     let center2 = center + Vec3::new(0.0, random::random_range(0.0..0.5), 0.0);
                     world.add(Arc::new(Sphere::new_moving(center, center2, 0.2, sphere_material)));
                 } else if choose_mat < 0.95 {
                     // metal
-                    let albedo = Col3f64::random_range(0.5..1.0);
+                    let albedo = Color::random_range(0.5..1.0);
                     let fuzz = rand::random_range(0.0..0.5);
                     let sphere_material = Arc::new(Metal::new(albedo, fuzz));
                     world.add(Arc::new(Sphere::new(center, 0.2, sphere_material)));
@@ -64,10 +63,10 @@ fn homework_3_render_test() {
     let material1 = Arc::new(Dielectric::new(1.5));
     world.add(Arc::new(Sphere::new(Vec3::new(0.0, 1.0, 0.0), 1.0, material1)));
 
-    let material2 = Arc::new(Lambertian::new(Col3f64::new(0.4, 0.2, 0.1)));
+    let material2 = Arc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
     world.add(Arc::new(Sphere::new(Vec3::new(-4.0, 1.0, 0.0), 1.0, material2)));
 
-    let material3 = Arc::new(Metal::new(Col3f64::new(0.7, 0.6, 0.5), 0.0));
+    let material3 = Arc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
     world.add(Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, material3)));
 
     let mut camera = Camera::from_aspect_ratio(920, 16.0 / 9.0);
@@ -84,7 +83,7 @@ fn homework_3_render_test() {
     camera.focus_dist = 10.0;
 
 
-    let ground_material = Arc::new(Lambertian::new(Col3f64::new(0.5, 0.5, 0.5)));
+    let ground_material = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
     world.add(Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, ground_material)));
 
     let world2 = BVHNode::new(&mut world);
@@ -103,13 +102,13 @@ fn homework_3_render_test() {
 fn homework_2_render_3() {
     let mut world = HittableList::new();
 
-    let ground_material = Arc::new(Metal::new(Col3f64::new(0.8, 0.2, 0.9), 0.1));
+    let ground_material = Arc::new(Metal::new(Color::new(0.8, 0.2, 0.9), 0.1));
     world.add(Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, ground_material)));
-    let background_material = Arc::new(Metal::new(Col3f64::new(0.1, 0.7, 0.1), 0.0));
+    let background_material = Arc::new(Metal::new(Color::new(0.1, 0.7, 0.1), 0.0));
     world.add(Arc::new(Sphere::new(Vec3::new(-1000.0, -300.0, -1000.0), 500.0, background_material)));
-    let background_material1 = Arc::new(Lambertian::new(Col3f64::new(0.8, 0.7, 0.1)));
+    let background_material1 = Arc::new(Lambertian::new(Color::new(0.8, 0.7, 0.1)));
     world.add(Arc::new(Sphere::new(Vec3::new(-2000.0, -700.0, -800.0), 400.0, background_material1)));
-    let background_material2 = Arc::new(Lambertian::new(Col3f64::new(1.0, 0.4, 0.1)));
+    let background_material2 = Arc::new(Lambertian::new(Color::new(1.0, 0.4, 0.1)));
     world.add(Arc::new(Sphere::new(Vec3::new(-800.0, -600.0, -2000.0), 800.0, background_material2)));
 
     for a in 0..500 {
@@ -123,12 +122,12 @@ fn homework_2_render_3() {
         if (center - Vec3::new(0.0, 150.0, 0.0)).length() < 150.0 {
             if choose_mat < 0.25 {
                 // diffuse
-                let albedo = Col3f64::random() * Col3f64::random();
+                let albedo = Color::random() * Color::random();
                 let sphere_material = Arc::new(Lambertian::new(albedo));
                 world.add(Arc::new(Sphere::new(center, radius, sphere_material)));
             } else if choose_mat < 0.55 {
                 // metal
-                let albedo = Col3f64::random_range(0.5..1.0);
+                let albedo = Color::random_range(0.5..1.0);
                 let fuzz = rand::random_range(0.0..0.5);
                 let sphere_material = Arc::new(Metal::new(albedo, fuzz));
                 world.add(Arc::new(Sphere::new(center, radius, sphere_material)));
@@ -163,7 +162,7 @@ fn homework_2_render_3() {
 fn homework_2_render_2() {
     let mut world = HittableList::new();
 
-    let ground_material = Arc::new(Lambertian::new(Col3f64::new(0.5, 0.5, 0.5)));
+    let ground_material = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
     world.add(Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, ground_material)));
 
     for a in -11..11 {
@@ -180,12 +179,12 @@ fn homework_2_render_2() {
             if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.3 {
                     // diffuse
-                    let albedo = Col3f64::random() * Col3f64::random();
+                    let albedo = Color::random() * Color::random();
                     let sphere_material = Arc::new(Lambertian::new(albedo));
                     world.add(Arc::new(Sphere::new(center, radius, sphere_material)));
                 } else if choose_mat < 0.75 {
                     // metal
-                    let albedo = Col3f64::random_range(0.5..1.0);
+                    let albedo = Color::random_range(0.5..1.0);
                     let fuzz = rand::random_range(0.0..0.5);
                     let sphere_material = Arc::new(Metal::new(albedo, fuzz));
                     world.add(Arc::new(Sphere::new(center, radius, sphere_material)));
@@ -221,7 +220,7 @@ fn homework_2_render_2() {
 fn homework_2_render_1() {
     let mut world = HittableStaticList::new();
 
-    let ground_material = Arc::new(Lambertian::new(Col3f64::new(0.5, 0.5, 0.5)));
+    let ground_material = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
     world.add(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, ground_material));
 
     for a in -11..11 {
@@ -237,12 +236,12 @@ fn homework_2_render_1() {
             if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.8 {
                     // diffuse
-                    let albedo = Col3f64::random() * Col3f64::random();
+                    let albedo = Color::random() * Color::random();
                     let sphere_material = Arc::new(Lambertian::new(albedo));
                     world.add(Sphere::new(center, 0.2, sphere_material));
                 } else if choose_mat < 0.95 {
                     // metal
-                    let albedo = Col3f64::random_range(0.5..1.0);
+                    let albedo = Color::random_range(0.5..1.0);
                     let fuzz = rand::random_range(0.0..0.5);
                     let sphere_material = Arc::new(Metal::new(albedo, fuzz));
                     world.add(Sphere::new(center, 0.2, sphere_material));
@@ -258,10 +257,10 @@ fn homework_2_render_1() {
     let material1 = Arc::new(Dielectric::new(1.5));
     world.add(Sphere::new(Vec3::new(0.0, 1.0, 0.0), 1.0, material1));
 
-    let material2 = Arc::new(Lambertian::new(Col3f64::new(0.4, 0.2, 0.1)));
+    let material2 = Arc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
     world.add(Sphere::new(Vec3::new(-4.0, 1.0, 0.0), 1.0, material2));
 
-    let material3 = Arc::new(Metal::new(Col3f64::new(0.7, 0.6, 0.5), 0.0));
+    let material3 = Arc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
     world.add(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, material3));
 
     let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
@@ -328,32 +327,32 @@ fn homework_one() {
 
     let middle = Vec3::new(127.0, 127.0, 0.0);
     let mut image_1 = Image::with_dimensions(256, 256);
-    image_1.draw_line(a, b, Col3f64::red(), 1.0, LineType::Bresenham);
-    image_1.draw_line(b, c, Col3f64::red(), 1.0, LineType::Bresenham);
-    image_1.draw_line(c, a, Col3f64::red(), 1.0, LineType::Bresenham);
+    image_1.draw_line(a, b, Color::red(), 1.0, LineType::Bresenham);
+    image_1.draw_line(b, c, Color::red(), 1.0, LineType::Bresenham);
+    image_1.draw_line(c, a, Color::red(), 1.0, LineType::Bresenham);
     let mut image_2 = Image::with_dimensions(256, 256);
-    image_2.draw_line(a, b, Col3f64::red(), 1.0, LineType::Antialiased);
-    image_2.draw_line(b, c, Col3f64::red(), 1.0, LineType::Antialiased);
-    image_2.draw_line(c, a, Col3f64::red(), 1.0, LineType::Antialiased);
+    image_2.draw_line(a, b, Color::red(), 1.0, LineType::Antialiased);
+    image_2.draw_line(b, c, Color::red(), 1.0, LineType::Antialiased);
+    image_2.draw_line(c, a, Color::red(), 1.0, LineType::Antialiased);
 
     let mut image_3 = Image::with_dimensions(256, 256);
-    image_3.draw_triangle(a, b, c, Col3f64::red(), 1.0, TriangleType::Scanline);
+    image_3.draw_triangle(a, b, c, Color::red(), 1.0, TriangleType::Scanline);
 
     let mut image_4 = Image::with_dimensions(256, 256);
-    image_4.draw_triangle(a, b, c, Col3f64::red(), 1.0, TriangleType::CrossAntialiased);
-    image_4.draw_triangle(d, e, f, Col3f64::green(), 1.0, TriangleType::CrossAntialiased);
-    image_4.draw_triangle(g, h, i, Col3f64::blue(), 1.0, TriangleType::CrossAntialiased);
+    image_4.draw_triangle(a, b, c, Color::red(), 1.0, TriangleType::CrossAntialiased);
+    image_4.draw_triangle(d, e, f, Color::green(), 1.0, TriangleType::CrossAntialiased);
+    image_4.draw_triangle(g, h, i, Color::blue(), 1.0, TriangleType::CrossAntialiased);
 
     let mut image_5 = Image::with_dimensions(256, 256);
-    image_5.draw_triangle(a, b, c, Col3f64::red(), 0.5, TriangleType::Scanline);
-    image_5.draw_triangle(d, e, f, Col3f64::green(), 0.5, TriangleType::Scanline);
-    image_5.draw_triangle(g, h, i, Col3f64::blue(), 0.5, TriangleType::CrossAntialiased);
+    image_5.draw_triangle(a, b, c, Color::red(), 0.5, TriangleType::Scanline);
+    image_5.draw_triangle(d, e, f, Color::green(), 0.5, TriangleType::Scanline);
+    image_5.draw_triangle(g, h, i, Color::blue(), 0.5, TriangleType::CrossAntialiased);
 
     let mut image_6 = Image::with_dimensions(256, 256);
-    image_6.draw_point(middle, Col3f64::green(), 0.75, 100.0, PointType::Circle);
-    image_6.draw_point(middle, Col3f64::cyan(), 0.90, 75.0, PointType::Circle);
-    image_6.draw_point(middle, Col3f64::yellow(), 0.85, 50.0, PointType::Circle);
-    image_6.draw_point(middle, Col3f64::magenta(), 0.65, 25.0, PointType::Circle);
+    image_6.draw_point(middle, Color::green(), 0.75, 100.0, PointType::Circle);
+    image_6.draw_point(middle, Color::cyan(), 0.90, 75.0, PointType::Circle);
+    image_6.draw_point(middle, Color::yellow(), 0.85, 50.0, PointType::Circle);
+    image_6.draw_point(middle, Color::magenta(), 0.65, 25.0, PointType::Circle);
 
     let mut image_7 = Image::with_dimensions(512, 512);
     let mut point_list: Vec<Vec3> = Vec::new();
@@ -369,14 +368,14 @@ fn homework_one() {
             point_list[i].scale(0.8);
             point_list[i].translate(Vec3::new(127.0, 127.0, 0.0));
         }
-        image_7.draw_line(point_list[0], point_list[1], Col3f64::red(), 1.0, LineType::Antialiased);
-        image_7.draw_line(point_list[1], point_list[2], Col3f64::green(), 1.0, LineType::Antialiased);
-        image_7.draw_line(point_list[2], point_list[3], Col3f64::blue(), 1.0, LineType::Antialiased);
-        image_7.draw_line(point_list[3], point_list[0], Col3f64::yellow(), 1.0, LineType::Antialiased);
-        image_7.draw_line(point_list[0], point_list[4], Col3f64::magenta(), 1.0, LineType::Antialiased);
-        image_7.draw_line(point_list[1], point_list[4], Col3f64::cyan(), 1.0, LineType::Antialiased);
-        image_7.draw_line(point_list[2], point_list[4], Col3f64::cyan(), 0.5, LineType::Antialiased);
-        image_7.draw_line(point_list[3], point_list[4], Col3f64::magenta(), 0.5, LineType::Antialiased);
+        image_7.draw_line(point_list[0], point_list[1], Color::red(), 1.0, LineType::Antialiased);
+        image_7.draw_line(point_list[1], point_list[2], Color::green(), 1.0, LineType::Antialiased);
+        image_7.draw_line(point_list[2], point_list[3], Color::blue(), 1.0, LineType::Antialiased);
+        image_7.draw_line(point_list[3], point_list[0], Color::yellow(), 1.0, LineType::Antialiased);
+        image_7.draw_line(point_list[0], point_list[4], Color::magenta(), 1.0, LineType::Antialiased);
+        image_7.draw_line(point_list[1], point_list[4], Color::cyan(), 1.0, LineType::Antialiased);
+        image_7.draw_line(point_list[2], point_list[4], Color::cyan(), 0.5, LineType::Antialiased);
+        image_7.draw_line(point_list[3], point_list[4], Color::magenta(), 0.5, LineType::Antialiased);
     }
     image_1.write_to_file("output1.ppm");
     image_2.write_to_file("output2.ppm");

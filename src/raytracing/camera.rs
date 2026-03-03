@@ -5,10 +5,9 @@ use crate::raytracing::hittable::*;
 use crate::raytracing::interval::*;
 use crate::raytracing::ray::*;
 use crate::random::*;
-use crate::threadbatcher::ThreadPool;
 use std::sync::{Mutex, Arc};
 use rayon::prelude::*;
-use progress_bar::*;
+use progress_bar;
 
 pub enum RayTracingMethod {
     Unoptimized,
@@ -144,14 +143,14 @@ impl Camera {
 
     pub fn render(&mut self, scene_objects: Arc<dyn Hittable>) {
         //let mut rng = fastrand::Rng::new();
-        init_progress_bar(self.viewport.data.len());
+        progress_bar::init_progress_bar(self.viewport.data.len());
         self.initialize();
         //let scene_objects = Arc::new(scene_objects);
         let pixel_samples_scale = 1.0 / (self.samples_per_pixel as f64);
         for y in 0..self.viewport.height {
             for x in 0..self.viewport.width {
-                inc_progress_bar();
-                let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
+                progress_bar::inc_progress_bar();
+                let mut pixel_color = Color::new(0.0, 0.0, 0.0);
                 for sample in 0..self.samples_per_pixel {
                     let ray = self.get_ray(x, y);
                     //pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
@@ -164,7 +163,7 @@ impl Camera {
             let percent_fract = (percent.fract() * 100.0) as i32;
             print!("\rPercent complete: {}.{}%", percent_int, percent_fract);
         }
-        finalize_progress_bar();
+        progress_bar::finalize_progress_bar();
     }
     pub fn render_threaded(&mut self, scene_objects: &impl Hittable) {
         self.initialize();
@@ -172,7 +171,7 @@ impl Camera {
         let mut img = Image::with_dimensions(self.viewport.width, self.viewport.height);
         let num_chunks = img.height;
         let chunk_size = img.data.len() / num_chunks;
-        init_progress_bar(num_chunks);
+        progress_bar::init_progress_bar(num_chunks);
         let mut total_samples = Arc::new(Mutex::new(0.0));
         let mut peak_samples = Arc::new(Mutex::new(0.0));
         img.data.par_chunks_mut(chunk_size).enumerate().for_each(|(chunk_number, row)|{
@@ -180,30 +179,19 @@ impl Camera {
             let mut peak = 0.0;
             for i in 0..row.len() {
                 let index =  chunk_number * chunk_size + i;
-                self.pixel_kernel(index, img.width, scene_objects, &mut row[i]);
-                //let curr_samples= self.convergent_kernel(0.80, index, img.width, scene_objects, &mut row[i]);
-                //total_chunk_samples += curr_samples;
-                //peak = f64::max(peak, curr_samples);
-
-                //let y = index / img.width;
-                //let x = index % img.width;
-                //let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
-                //let mut old_color = pixel_color;
-                //for sample in 0..self.samples_per_pixel {
-                //    let ray = self.get_ray(x, y);
-                //    pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
-                //}
-                //pixel_color *= self.pixel_samples_scale;
-                //row[i] = linear_to_srgb(pixel_color);
+                //self.pixel_kernel(index, img.width, scene_objects, &mut row[i]);
+                let curr_samples= self.convergent_kernel(0.40, index, img.width, scene_objects, &mut row[i]);
+                total_chunk_samples += curr_samples;
+                peak = f64::max(peak, curr_samples);
             }
-            inc_progress_bar();
-            //let mut samps = total_samples.lock().unwrap();
-            //*samps += total_chunk_samples;
-            //let mut peaks = peak_samples.lock().unwrap();
-            //*peaks += peak;
+            progress_bar::inc_progress_bar();
+            let mut samps = total_samples.lock().unwrap();
+            *samps += total_chunk_samples;
+            let mut peaks = peak_samples.lock().unwrap();
+            *peaks += peak;
 
         });
-        finalize_progress_bar();
+        progress_bar::finalize_progress_bar();
 
         let samps = total_samples.lock().unwrap();
         let peak = peak_samples.lock().unwrap();
@@ -221,7 +209,7 @@ impl Camera {
             self.pixel_kernel(index, img.width, scene_objects, pixel);
             let y = index / img.width;
             let x = index % img.width;
-            let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
+            let mut pixel_color = Color::new(0.0, 0.0, 0.0);
             for sample in 0..self.samples_per_pixel {
                 let ray = self.get_ray(x, y);
                 pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
@@ -235,10 +223,10 @@ impl Camera {
     }
 
     #[inline]
-    fn pixel_kernel(&self, index: usize, width: usize, scene_objects: &impl Hittable, pixel: &mut Col3f64) {
+    fn pixel_kernel(&self, index: usize, width: usize, scene_objects: &impl Hittable, pixel: &mut Color) {
         let y = index / width;
         let x = index % width;
-        let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
+        let mut pixel_color = Color::new(0.0, 0.0, 0.0);
         for sample in 0..self.samples_per_pixel {
             let ray = self.get_ray(x, y);
             pixel_color += self.ray_color(ray, scene_objects, self.max_depth);
@@ -258,10 +246,10 @@ impl Camera {
      * any convergence ratio in [0.0, 1.0). Convergence is impossible for [1.0, inf), or (-inf, 0.0)
      */
     #[inline]
-    fn convergent_kernel(&self, convergence_ratio: f64, index: usize, width: usize, scene_objects: &impl Hittable, pixel: &mut Col3f64) -> f64 {
+    fn convergent_kernel(&self, convergence_ratio: f64, index: usize, width: usize, scene_objects: &impl Hittable, pixel: &mut Color) -> f64 {
         let y = index / width;
         let x = index % width;
-        let mut pixel_color = Col3f64::new(0.0, 0.0, 0.0);
+        let mut pixel_color = Color::new(0.0, 0.0, 0.0);
         let mut old_color = pixel_color;
         let mut num_samples = 0;
         let mut num_samples_unchanged = 0;
@@ -289,18 +277,18 @@ impl Camera {
 
     fn ray_color(&self, ray: Ray, scene_objects: &impl Hittable, depth: usize) -> Vec3{
         if depth <= 0 {
-            return Col3f64::new(0.0, 0.0, 0.0);
+            return Color::new(0.0, 0.0, 0.0);
         }
         let mut hit_record = HitRecord::new();
         let mut interval = Interval::new(1.0e-8, f64::INFINITY);
         if scene_objects.first_hit_on_interval(ray, &mut interval, &mut hit_record) {
             let mut scattered: Ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
-            let mut attenuation: Col3f64 = Col3f64::new(0.0, 0.0, 0.0);
+            let mut attenuation: Color = Color::new(0.0, 0.0, 0.0);
             let mat = hit_record.mat.clone();
             if mat.unwrap().scatter(ray, &hit_record, &mut attenuation, &mut scattered) {
                 return attenuation * self.ray_color(scattered, scene_objects, depth - 1);
             }
-            return Col3f64::new(0.0, 0.0, 0.0);
+            return Color::new(0.0, 0.0, 0.0);
         }
         let unit_direction = ray.direction.normalized();
         let a = 0.5 * (unit_direction.y + 1.0);
@@ -335,8 +323,8 @@ fn linear_to_gamma_float(linear_component: f64) -> f64 {
     linear_component.sqrt()
 }
 
-fn linear_to_gamma(linear_color: Col3f64) -> Col3f64 {
-    Col3f64 {
+fn linear_to_gamma(linear_color: Color) -> Color {
+    Color {
         x: linear_to_gamma_float(linear_color.x),
         y: linear_to_gamma_float(linear_color.y),
         z: linear_to_gamma_float(linear_color.z),
@@ -351,8 +339,8 @@ fn linear_to_srgb_float(linear_component: f64) -> f64 {
     }
 }
 
-fn linear_to_srgb(linear_color: Col3f64) -> Col3f64 {
-    Col3f64 {
+fn linear_to_srgb(linear_color: Color) -> Color {
+    Color {
         x: linear_to_srgb_float(linear_color.x),
         y: linear_to_srgb_float(linear_color.y),
         z: linear_to_srgb_float(linear_color.z),

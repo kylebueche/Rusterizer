@@ -1,6 +1,6 @@
 use crate::vector::{Vec3};
 use crate::image::*;
-use crate::color::Col3f64;
+use crate::color::Color;
 
 #[expect(unused)]
 pub enum DrawMode {
@@ -19,7 +19,7 @@ pub struct Mesh {
     pub rotation: Vec3,
     pub scale: Vec3,
 
-    pub color: Col3f64,
+    pub color: Color,
 }
 
 fn lerp(t: f64, a: f64, b: f64) -> f64 {
@@ -35,7 +35,7 @@ impl Mesh {
             position: Vec3::new(0.0, 0.0, 0.0),
             rotation: Vec3::new(0.0, 0.0, 0.0),
             scale: Vec3::new(1.0, 1.0, 1.0),
-            color: Col3f64::new(1.0, 1.0, 1.0),
+            color: Color::new(1.0, 1.0, 1.0),
         }
     }
 

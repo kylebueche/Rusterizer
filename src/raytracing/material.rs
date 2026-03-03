@@ -1,26 +1,26 @@
-use crate::color::Col3f64;
+use crate::color::Color;
 use crate::random::*;
 use crate::raytracing::hittable::*;
 use crate::raytracing::ray::*;
 
 pub trait Material {
-    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray) -> bool;
+    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Color, scattered: &mut Ray) -> bool;
 }
 
 pub struct Lambertian {
-    pub albedo: Col3f64,
+    pub albedo: Color,
 }
 
 impl Lambertian {
     #[inline]
-    pub fn new(albedo: Col3f64) -> Self {
+    pub fn new(albedo: Color) -> Self {
         Lambertian { albedo }
     }
 }
 
 impl Material for Lambertian {
     #[inline]
-    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray) -> bool {
+    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Color, scattered: &mut Ray) -> bool {
         //let scatter_direction = random_on_unit_sphere_above_normal(hit_record.normal);
         let scatter_direction = random_cosine_direction(hit_record.normal);
         *scattered = Ray::with_time(hit_record.point, scatter_direction, ray_in.time);
@@ -30,13 +30,13 @@ impl Material for Lambertian {
 }
 
 pub struct Metal {
-    pub albedo: Col3f64,
+    pub albedo: Color,
     pub fuzz: f64,
 }
 
 impl Metal {
     #[inline]
-    pub fn new(albedo: Col3f64, fuzz: f64) -> Self {
+    pub fn new(albedo: Color, fuzz: f64) -> Self {
         Metal {
             albedo,
             fuzz: if fuzz < 1.0 { fuzz } else { 1.0 },
@@ -46,7 +46,7 @@ impl Metal {
 
 impl Material for Metal {
     #[inline]
-    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray) -> bool {
+    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Color, scattered: &mut Ray) -> bool {
         let mut reflected = ray_in.direction.reflect(hit_record.normal);
         reflected = reflected.normalized() + (self.fuzz * random_unit_vector());
         *scattered = Ray::with_time(hit_record.point, reflected, ray_in.time);
@@ -75,8 +75,8 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Col3f64, scattered: &mut Ray) -> bool {
-        *attenuation = Col3f64::new(1.0, 1.0, 1.0);
+    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Color, scattered: &mut Ray) -> bool {
+        *attenuation = Color::new(1.0, 1.0, 1.0);
         let refractive_index = if hit_record.front_face {
             1.0 / self.refraction_index // entering from air
         } else {

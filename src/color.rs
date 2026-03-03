@@ -1,7 +1,7 @@
 use std::ops;
 use crate::vector::*;
 
-pub type Col3f64 = Vec3;
+pub type Color = Vec3;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Col3u8 {
@@ -35,7 +35,7 @@ impl Col3u8 {
 */
 
 
-impl Col3f64 {
+impl Color {
     pub fn white() -> Self {
         Self::new(1.0, 1.0, 1.0)
     }
@@ -78,9 +78,9 @@ impl Col3f64 {
     }
 }
 
-impl From<Col3u8> for Col3f64 {
-    fn from(_from: Col3u8) -> Col3f64 {
-        (1.0 / 255.0) * Col3f64 {
+impl From<Col3u8> for Color {
+    fn from(_from: Col3u8) -> Color {
+        (1.0 / 255.0) * Color {
             x: _from.r as f64,
             y: _from.g as f64,
             z: _from.b as f64
@@ -88,9 +88,9 @@ impl From<Col3u8> for Col3f64 {
     }
 }
 
-impl From<Col3f64> for Col3u8 {
-    fn from(_from: Col3f64) -> Col3u8 {
-        let _from: Col3f64 = 255.99 * _from;
+impl From<Color> for Col3u8 {
+    fn from(_from: Color) -> Col3u8 {
+        let _from: Color = 255.99 * _from;
         Col3u8 {
             r: _from.x as u8,
             g: _from.y as u8,
@@ -100,10 +100,10 @@ impl From<Col3f64> for Col3u8 {
 }
 
 
-impl ops::Mul<Col3f64> for Col3f64 {
-    type Output = Col3f64;
-    fn mul(self, _rhs: Col3f64) -> Col3f64 {
-        Col3f64 {
+impl ops::Mul<Color> for Color {
+    type Output = Color;
+    fn mul(self, _rhs: Color) -> Color {
+        Color {
             x: self.x * _rhs.x,
             y: self.y * _rhs.y,
             z: self.z * _rhs.z,

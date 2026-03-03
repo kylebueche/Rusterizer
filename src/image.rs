@@ -1,14 +1,14 @@
 use std::fs;
 use std::mem::swap;
 use std::ops::{Index, IndexMut};
-use crate::color::{Col3f64, Col3u8};
+use crate::color::{Color, Col3u8};
 use crate::vector::{Vec2i, Vec3};
 
 #[derive(Clone)]
 pub struct Image {
     pub width: usize,
     pub height: usize,
-    pub data: Vec<Col3f64>,
+    pub data: Vec<Color>,
     //pub z_buffer: Vec<f64>,
     //pub use_z_buffering: bool,
 }
@@ -28,7 +28,7 @@ impl Image {
         Self {
             width: width,
             height: height,
-            data: vec![Col3f64::white(); width * height],
+            data: vec![Color::white(); width * height],
             //z_buffer: vec![f64::NEG_INFINITY; 3 * width * height],
             //use_z_buffering: false,
         }
@@ -38,11 +38,11 @@ impl Image {
         self.z_buffer.fill(f64::NEG_INFINITY);
     }*/
 
-    pub fn index_2d(&self, x: usize, y: usize) -> &Col3f64 {
+    pub fn index_2d(&self, x: usize, y: usize) -> &Color {
         &self.data[self.width * y + x]
     }
 
-    pub fn index_2d_mut(&mut self, x: usize, y: usize) -> &mut Col3f64 {
+    pub fn index_2d_mut(&mut self, x: usize, y: usize) -> &mut Color {
         &mut self.data[self.width * y + x]
     }
 
@@ -63,7 +63,7 @@ impl Image {
 
     }
 
-    pub fn over(&mut self, x: usize, y: usize, color: Col3f64, alpha: f64) {
+    pub fn over(&mut self, x: usize, y: usize, color: Color, alpha: f64) {
         if x >= self.width || y >= self.height {
             return;
         }
@@ -74,7 +74,7 @@ impl Image {
 }
 
 impl Index<usize> for Image {
-    type Output = Col3f64;
+    type Output = Color;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.data[index]
@@ -105,7 +105,7 @@ pub enum PointType {
 }
 
 impl Image { // Rasterization interface
-    pub fn draw_triangle(&mut self, a: Vec3, b: Vec3, c: Vec3, color: Col3f64, alpha: f64, triangle_type: TriangleType) {
+    pub fn draw_triangle(&mut self, a: Vec3, b: Vec3, c: Vec3, color: Color, alpha: f64, triangle_type: TriangleType) {
         match triangle_type {
             TriangleType::Scanline => {
                 self.scanline_triangle(Vec2i::from(a), Vec2i::from(b), Vec2i::from(c), color, alpha);
@@ -116,7 +116,7 @@ impl Image { // Rasterization interface
         }
     }
 
-    pub fn draw_line(&mut self, a: Vec3, b: Vec3, color: Col3f64, alpha: f64, line_type: LineType) {
+    pub fn draw_line(&mut self, a: Vec3, b: Vec3, color: Color, alpha: f64, line_type: LineType) {
         match line_type { // may want other line drawtypes in the future
             LineType::Bresenham => {
                 self.draw_line_bresenham(Vec2i::from(a), Vec2i::from(b), color, alpha);
@@ -133,7 +133,7 @@ impl Image { // Rasterization interface
         }
     }
 
-    pub fn draw_point(&mut self, a: Vec3, color: Col3f64, alpha: f64, radius: f64, point_type: PointType) {
+    pub fn draw_point(&mut self, a: Vec3, color: Color, alpha: f64, radius: f64, point_type: PointType) {
         match point_type {
             PointType::Square => {
                 self.draw_point_square(Vec2i::from(a), color, alpha, radius as i32);
@@ -147,7 +147,7 @@ impl Image { // Rasterization interface
 
 impl Image { // Rasterization details
 
-    fn draw_point_square(&mut self, a: Vec2i, color: Col3f64, alpha: f64, radius: i32) {
+    fn draw_point_square(&mut self, a: Vec2i, color: Color, alpha: f64, radius: i32) {
         for i in (- radius + 1)..(radius - 1) {
             for j in (- radius + 1)..(radius - 1) {
                 let x = (a.x + i) as usize;
@@ -156,7 +156,7 @@ impl Image { // Rasterization details
             }
         }
     }
-    fn draw_point_circle(&mut self, a: Vec2i, color: Col3f64, alpha: f64, radius: i32) {
+    fn draw_point_circle(&mut self, a: Vec2i, color: Color, alpha: f64, radius: i32) {
         for i in (- radius + 1)..=(radius - 1) {
             for j in (- radius + 1)..=(radius - 1) {
                 let x = a.x + i;
@@ -167,7 +167,7 @@ impl Image { // Rasterization details
             }
         }
     }
-    fn scanline_triangle(&mut self, a: Vec2i, b: Vec2i, c: Vec2i, color: Col3f64, alpha: f64) {
+    fn scanline_triangle(&mut self, a: Vec2i, b: Vec2i, c: Vec2i, color: Color, alpha: f64) {
         let mut top_point = a;
         let mut mid_point = b;
         let mut bottom_point = c;
@@ -227,7 +227,7 @@ impl Image { // Rasterization details
         }
     }
 
-    fn draw_triangle_cross_products_antialiased(&mut self, a: Vec3, b: Vec3, c: Vec3, color: Col3f64, alpha: f64) {
+    fn draw_triangle_cross_products_antialiased(&mut self, a: Vec3, b: Vec3, c: Vec3, color: Color, alpha: f64) {
         // Not working right now
         let x_samples = 8;
         let y_samples = 8;
@@ -269,7 +269,7 @@ impl Image { // Rasterization details
         }
     }
 
-    fn draw_line_bresenham(&mut self, start: Vec2i, end: Vec2i, color: Col3f64, alpha: f64) {
+    fn draw_line_bresenham(&mut self, start: Vec2i, end: Vec2i, color: Color, alpha: f64) {
         if (end.y - start.y).abs() < (end.x - start.x).abs() {
             if start.x > end.x {
                 self.plot_line_low(end, start, color, alpha);
@@ -285,7 +285,7 @@ impl Image { // Rasterization details
         }
     }
 
-    fn plot_line_low(&mut self, start: Vec2i, end: Vec2i, color: Col3f64, alpha: f64) {
+    fn plot_line_low(&mut self, start: Vec2i, end: Vec2i, color: Color, alpha: f64) {
         let dx = end.x - start.x;
         let mut dy = end.y - start.y;
         let mut yi = 1;
@@ -307,7 +307,7 @@ impl Image { // Rasterization details
         }
     }
 
-    fn plot_line_high(&mut self, start: Vec2i, end: Vec2i, color: Col3f64, alpha: f64) {
+    fn plot_line_high(&mut self, start: Vec2i, end: Vec2i, color: Color, alpha: f64) {
         let mut dx = end.x - start.x;
         let dy = end.y - start.y;
         let mut xi = 1;
@@ -330,7 +330,7 @@ impl Image { // Rasterization details
         }
     }
 
-    fn draw_line_antialiased(&mut self, start: Vec2i, end: Vec2i, color: Col3f64, alpha: f64) {
+    fn draw_line_antialiased(&mut self, start: Vec2i, end: Vec2i, color: Color, alpha: f64) {
         let dx = end.x - start.x;
         let dy = end.y - start.y;
         if dy.abs() > dx.abs() {
@@ -350,7 +350,7 @@ impl Image { // Rasterization details
             self.draw_horizontal_line_antialiased(points.0, points.1, color, alpha);
         }
     }
-    fn draw_vertical_line_antialiased(&mut self, start: Vec2i, end: Vec2i, color: Col3f64, alpha: f64) {
+    fn draw_vertical_line_antialiased(&mut self, start: Vec2i, end: Vec2i, color: Color, alpha: f64) {
         let dx = end.x - start.x;
         let dy = end.y - start.y;
         let m = dx as f64 / dy as f64;
@@ -364,7 +364,7 @@ impl Image { // Rasterization details
         }
     }
 
-    fn draw_horizontal_line_antialiased(&mut self, start: Vec2i, end: Vec2i, color: Col3f64, alpha: f64) {
+    fn draw_horizontal_line_antialiased(&mut self, start: Vec2i, end: Vec2i, color: Color, alpha: f64) {
         let dx = end.x - start.x;
         let dy = end.y - start.y;
         let m = dy as f64 / dx as f64;
@@ -379,7 +379,7 @@ impl Image { // Rasterization details
     }
 
 
-    fn draw_line_experimental_bresenham(&mut self, start: Vec2i, end: Vec2i, color: Col3f64, alpha: f64) {
+    fn draw_line_experimental_bresenham(&mut self, start: Vec2i, end: Vec2i, color: Color, alpha: f64) {
         let dx = end.x - start.x;
         let dy = end.y - start.y;
         let straight_x = if dx.abs() < dy.abs() {
@@ -443,7 +443,7 @@ impl Image { // Rasterization details
         self.over(end.x as usize, end.y as usize, color, alpha);
     }
 
-    fn draw_line_xiaolin_wu_antialiased(&mut self, start: Vec2i, end: Vec2i, color: Col3f64, alpha: f64) {
+    fn draw_line_xiaolin_wu_antialiased(&mut self, start: Vec2i, end: Vec2i, color: Color, alpha: f64) {
         //todo!(); // not implemented yet. stub.
         self.over(start.x as usize, start.y as usize, color, alpha);
         self.over(end.x as usize, end.y as usize, color, alpha);

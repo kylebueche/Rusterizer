@@ -6,5 +6,6 @@ pub mod implicits;
 pub mod material;
 pub mod aabb;
 pub mod bvh;
+pub mod texture;
 
 
