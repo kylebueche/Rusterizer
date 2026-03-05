@@ -180,7 +180,7 @@ impl Camera {
             for i in 0..row.len() {
                 let index =  chunk_number * chunk_size + i;
                 //self.pixel_kernel(index, img.width, scene_objects, &mut row[i]);
-                let curr_samples= self.convergent_kernel(0.40, index, img.width, scene_objects, &mut row[i]);
+                let curr_samples= self.convergent_kernel(0.60, index, img.width, scene_objects, &mut row[i]);
                 total_chunk_samples += curr_samples;
                 peak = f64::max(peak, curr_samples);
             }
@@ -259,7 +259,8 @@ impl Camera {
             pixel_color += sample;
             num_samples += 1;
             let new_color = pixel_color / num_samples as f64;
-            let diff = new_color - old_color;
+            // These need to be compared in perceptible space
+            let diff = linear_to_srgb(new_color) - linear_to_srgb(old_color);
             if diff.x.abs() < 1.0 / 255.0 && diff.y.abs() < 1.0 / 255.0 && diff.z.abs() < 1.0 / 255.0 {
                 num_samples_unchanged += 1;
             } else {

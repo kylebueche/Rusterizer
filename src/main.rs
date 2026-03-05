@@ -69,7 +69,7 @@ fn homework_3_render_test() {
     let material3 = Arc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
     world.add(Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, material3)));
 
-    let mut camera = Camera::from_aspect_ratio(920, 16.0 / 9.0);
+    let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
 
     camera.samples_per_pixel = 100;
     camera.max_depth = 50;
