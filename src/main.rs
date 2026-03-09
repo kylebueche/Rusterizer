@@ -19,6 +19,7 @@ use raytracing::hittable::*;
 use raytracing::implicits::sphere::*;
 use raytracing::material::*;
 use raytracing::bvh::*;
+use crate::raytracing::texture::CheckerTexture;
 
 fn main() {
     homework_3_render_test();
@@ -26,6 +27,9 @@ fn main() {
 
 
 fn homework_3_render_test() {
+    let left = Color::new(0.2, 0.3, 0.1);
+    let right = Color::new(0.9, 0.9, 0.9);
+    let checker = Arc::new(CheckerTexture::new(0.32, left, right));
     let mut world = HittableList::new();
 
     for a in -11..11 {
@@ -69,9 +73,9 @@ fn homework_3_render_test() {
     let material3 = Arc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
     world.add(Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, material3)));
 
-    let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
+    let mut camera = Camera::from_aspect_ratio(920, 16.0 / 9.0);
 
-    camera.samples_per_pixel = 100;
+    camera.samples_per_pixel = 500;
     camera.max_depth = 50;
 
     camera.field_of_view = 35.0;
@@ -83,7 +87,7 @@ fn homework_3_render_test() {
     camera.focus_dist = 10.0;
 
 
-    let ground_material = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
+    let ground_material = Arc::new(Lambertian::from_texture(checker));
     world.add(Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, ground_material)));
 
     let world2 = BVHNode::new(&mut world);
