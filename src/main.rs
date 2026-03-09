@@ -22,9 +22,36 @@ use raytracing::bvh::*;
 use crate::raytracing::texture::CheckerTexture;
 
 fn main() {
-    homework_3_render_test();
+    checkered_spheres();
+    //homework_3_render_test();
 }
 
+fn checkered_spheres() {
+    let mut world = HittableList::new();
+    let left = Color::new(0.2, 0.3, 0.1);
+    let right = Color::new(0.9, 0.9, 0.9);
+    let checker = Arc::new(CheckerTexture::new(0.32, left, right));
+    let material = Arc::new(Lambertian::from_texture(checker));
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, -10.0, 0.0), 10.0, material.clone())));
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, 10.0, 0.0), 10.0, material)));
+
+    let mut camera = Camera::from_aspect_ratio(920, 16.0 / 9.0);
+    camera.samples_per_pixel = 500;
+    camera.max_depth = 50;
+    camera.field_of_view = 50.0;
+    camera.look_from = Vec3::new(13.0, 2.0, 3.0);
+    camera.look_at = Vec3::new(0.0, 0.0, 0.0);
+    camera.up = Vec3::new(0.0, 1.0, 0.0);
+    camera.defocus_angle = 0.0;
+
+
+    let time = std::time::Instant::now();
+    camera.render_threaded(&world);
+    camera.viewport.write_to_file("rt.ppm");
+    let time_elapsed = time.elapsed();
+    println!();
+    println!("Time taken to render: {} seconds", time_elapsed.as_secs_f64());
+}
 
 fn homework_3_render_test() {
     let left = Color::new(0.2, 0.3, 0.1);

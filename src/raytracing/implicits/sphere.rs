@@ -44,6 +44,13 @@ impl Sphere {
     fn normal_at(&self, point: Vec3) -> Vec3 {
         (1.0 / self.radius) * (point - self.position.origin)
     }
+
+    pub fn get_sphere_uv(p: Vec3) -> (f64, f64) {
+        let (theta, phi) = p.get_cartesian();
+        let u = phi / (2.0 * std::f64::consts::PI);
+        let v = theta / std::f64::consts::PI;
+        (u, v)
+    }
 }
 
 
@@ -68,6 +75,9 @@ impl Hittable for Sphere {
             let outward_normal = (hit_record.point - sphere_position) / self.radius; //self.normal_at(hit_record.point);
             hit_record.set_face_normal(ray, outward_normal);
             hit_record.mat = Some(self.mat.clone());
+            let (u, v) = Sphere::get_sphere_uv(outward_normal);
+            hit_record.u = u;
+            hit_record.v = v;
         }
         if interval.contains(t1) {
             interval.upper_bound = t1;
@@ -76,6 +86,9 @@ impl Hittable for Sphere {
             let outward_normal = (hit_record.point - sphere_position) / self.radius;
             hit_record.set_face_normal(ray, outward_normal);
             hit_record.mat = Some(self.mat.clone());
+            let (u, v) = Sphere::get_sphere_uv(outward_normal);
+            hit_record.u = u;
+            hit_record.v = v;
         }
 
         hit_sphere

@@ -14,6 +14,22 @@ impl Vec3
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
     }
+
+    #[inline]
+    pub fn from_cartesian(theta: f64, phi: f64, radius: f64) -> Self {
+        radius * Self {
+            x: - f64::cos(theta),
+            y: - f64::cos(phi) * f64::sin(theta),
+            z: f64::sin(phi) * f64::cos(theta),
+        }
+    }
+
+    pub fn get_cartesian(self) -> (f64, f64) {
+        let phi = f64::atan2(-self.z, self.x) + std::f64::consts::PI;
+        let theta = f64::acos(-self.y);
+        (theta, phi)
+    }
+
     #[inline]
     pub fn dot(&self, other: Self) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z
