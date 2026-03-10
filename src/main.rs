@@ -53,8 +53,8 @@ fn final_scene() {
     let blas1 = BVHNode::new(&mut boxes1);
 
     let mut world = HittableList::new();
-    world.add(Arc::new(blas1));
-
+    world.add(Arc::new(Translate::new(Arc::new(RotateY::new(Arc::new(blas1), 0.0)), Vec3::new(0.0, 0.0, 0.0))));
+    //world.add(Arc::new(boxes1));
     let light = Arc::new(DiffuseLight::new(Color::new(7.0, 7.0, 7.0)));
     world.add(Arc::new(Quad::new(Vec3::new(123.0, 554.0, 147.0), Vec3::new(300.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 265.0), light)));
     let center1 = Vec3::new(400.0, 400.0, 200.0);
@@ -85,9 +85,9 @@ fn final_scene() {
     let blas2 = Arc::new(BVHNode::new(&mut boxes2));
     world.add(Arc::new(Translate::new(Arc::new(RotateY::new(blas2, 15.0)), Vec3::new(-100.0, 270.0, 395.0))));
 
-    let mut camera = Camera::from_aspect_ratio(920, 1.0);
+    let mut camera = Camera::from_aspect_ratio(120, 1.0);
 
-    camera.samples_per_pixel = 500;
+    camera.samples_per_pixel = 25;
     camera.max_depth = 50;
     camera.background = Color::new(0.0, 0.0, 0.0);
 
