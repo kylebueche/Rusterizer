@@ -182,7 +182,7 @@ impl Camera {
             for i in 0..row.len() {
                 let index =  chunk_number * chunk_size + i;
                 self.pixel_kernel(index, img.width, scene_objects, &mut row[i]);
-                //let curr_samples= self.convergent_kernel(0.07, index, img.width, scene_objects, &mut row[i]);
+                //let curr_samples= self.convergent_kernel(0.1, index, img.width, scene_objects, &mut row[i]);
                 //total_chunk_samples += curr_samples;
                 //peak = f64::max(peak, curr_samples);
             }
