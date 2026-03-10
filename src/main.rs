@@ -23,7 +23,8 @@ use crate::raytracing::texture::*;
 use crate::raytracing::implicits::quad::Quad;
 
 fn main() {
-    final_scene();
+    hw3_scene3();
+    //final_scene();
     //cornell_smoke()
     //simple_light();
     //quads();
@@ -32,6 +33,96 @@ fn main() {
     //checkered_spheres();
     //homework_3_render_test();
 }
+
+fn hw3_scene3() {
+    let mut world = HittableList::new();
+    let mut noise_tex = Arc::new(NoiseTexture::new(0.05));
+    let mut ground_mat = Arc::new(DiffuseLight::from_texture(noise_tex.clone()));
+    let mut ground = Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, ground_mat.clone()));
+
+    let mut fog_container = Arc::new(Sphere::new(Vec3::new(0.0, 0.0, 2.0), 1.0, Arc::new(Dielectric::new(0.5))));
+    let mut fog = Arc::new(ConstantMedium::from_texture(fog_container, 2.0, noise_tex.clone()));
+
+    let mut fog_container2 = Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 3.0), 2.0, Arc::new(Dielectric::new(3.5))));
+    let mut fog2 = Arc::new(ConstantMedium::from_texture(fog_container2, 3.0, noise_tex.clone()));
+
+    let mut fog_container3 = Arc::new(Sphere::new(Vec3::new(-5.0, 3.0, -5.0), 3.0, Arc::new(Dielectric::new(3.5))));
+    let mut fog3 = Arc::new(ConstantMedium::from_texture(fog_container3, 0.45, noise_tex.clone()));
+
+    world.add(ground);
+    world.add(fog);
+    world.add(fog2);
+    world.add(fog3);
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, 1.0, 0.0), 1.0, Arc::new(Dielectric::new(0.5)))));
+    world.add(Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 3.0), 1.5, Arc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1))))));
+    world.add(Arc::new(Sphere::new(Vec3::new(-4.0, 1.0, 0.0), 1.0, Arc::new(Lambertian::new(Color::new(0.1, 0.2, 0.6))))));
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, 3.0, -10.0), 3.0, Arc::new(Lambertian::new(Color::new(0.1, 0.7, 0.3))))));
+    world.add(Arc::new(Sphere::new(Vec3::new(-3.0, 2.0, -5.0), 2.0, Arc::new(Metal::new(Color::new(1.0, 1.0, 1.0), 0.01)))));
+    world.add(Arc::new(Translate::new(Arc::new(RotateY::new(block(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0), Arc::new(Dielectric::new(1.5))), 15.0)), Vec3::new(0.0, 3.0, 0.0))));
+    world.add(Arc::new(Translate::new(Arc::new(RotateY::new(block(Vec3::new(-2.0, -1.0, -1.0), Vec3::new(2.0, 0.5, 1.0), Arc::new(Dielectric::new(4.0))), -30.0)), Vec3::new(0.0, 0.9, 5.0))));
+    let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
+
+    camera.samples_per_pixel = 2000;
+    camera.max_depth = 40;
+    camera.background = Color::new(0.0, 0.0, 0.0);
+
+    camera.field_of_view = 60.0;
+    camera.look_from = Vec3::new(0.0, 5.0, 18.0);
+    camera.look_at = Vec3::new(0.0, 2.0, 0.0);
+    camera.up = Vec3::new(0.0, 1.0, 0.0);
+
+    camera.defocus_angle = 0.0;
+
+    //let bvh = BVHNode::new(&mut world);
+    let time = std::time::Instant::now();
+    camera.render_threaded(&world);
+    camera.viewport.write_to_file("rt.ppm");
+    let time_elapsed = time.elapsed();
+    println!();
+    println!("Time taken to render: {} seconds", time_elapsed.as_secs_f64());
+}
+
+fn hw3_scene2() {
+    let mut world = HittableList::new();
+    let mut noise_tex = Arc::new(NoiseTexture::new(0.05));
+    let mut ground_mat = Arc::new(Lambertian::from_texture(noise_tex.clone()));
+    let mut ground = Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, ground_mat.clone()));
+
+    let mut fog_container = Arc::new(Sphere::new(Vec3::new(0.0, 0.0, 5.0), 1.0, Arc::new(Dielectric::new(0.3))));
+    let mut fog = Arc::new(ConstantMedium::from_texture(fog_container, 1.0, noise_tex.clone()));
+
+    let mut fog_container2 = Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 3.0), 2.0, Arc::new(Dielectric::new(3.5))));
+    let mut fog2 = Arc::new(ConstantMedium::from_texture(fog_container2, 1.0, noise_tex.clone()));
+
+    let mut fog_container3 = Arc::new(Sphere::new(Vec3::new(-5.0, 3.0, -1.0), 3.0, Arc::new(Dielectric::new(3.5))));
+    let mut fog3 = Arc::new(ConstantMedium::from_texture(fog_container3, 0.45, noise_tex.clone()));
+
+    world.add(ground);
+    world.add(fog);
+    world.add(fog2);
+    world.add(fog3);
+    let mut camera = Camera::from_aspect_ratio(1920, 16.0 / 9.0);
+
+    camera.samples_per_pixel = 1000;
+    camera.max_depth = 40;
+    camera.background = Color::new(0.6, 0.7, 1.0);
+
+    camera.field_of_view = 70.0;
+    camera.look_from = Vec3::new(0.0, 1.0, 10.0);
+    camera.look_at = Vec3::new(0.0, 0.0, 0.0);
+    camera.up = Vec3::new(0.0, 1.0, 0.0);
+
+    camera.defocus_angle = 0.0;
+
+    //let bvh = BVHNode::new(&mut world);
+    let time = std::time::Instant::now();
+    camera.render_threaded(&world);
+    camera.viewport.write_to_file("rt.ppm");
+    let time_elapsed = time.elapsed();
+    println!();
+    println!("Time taken to render: {} seconds", time_elapsed.as_secs_f64());
+}
+
 
 fn final_scene() {
     let mut world = HittableList::new();
@@ -86,10 +177,10 @@ fn final_scene() {
     let blas2 = Arc::new(BVHNode::new(&mut boxes2));
     world.add(Arc::new(Translate::new(Arc::new(RotateY::new(blas2, 15.0)), Vec3::new(-100.0, 270.0, 395.0))));
 
-    let mut camera = Camera::from_aspect_ratio(1920, 16.0/9.0);
+    let mut camera = Camera::from_aspect_ratio(800, 1.0);
 
-    camera.samples_per_pixel = 10000;
-    camera.max_depth = 40;
+    camera.samples_per_pixel = 600;
+    camera.max_depth = 30;
     camera.background = Color::new(0.0, 0.0, 0.0);
 
     camera.field_of_view = 40.0;
