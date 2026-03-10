@@ -1,4 +1,6 @@
 pub mod sphere;
+pub mod quad;
+pub mod plane;
 
 fn quadratic_formula(a: f64, b: f64, c: f64) -> (bool, f64, f64) {
     let denominator = 2.0 * a;

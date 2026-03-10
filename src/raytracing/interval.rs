@@ -1,3 +1,5 @@
+use crate::vector::Vec3;
+
 #[derive(Copy, Clone, Debug)]
 pub struct Interval {
     pub lower_bound: f64,
@@ -33,6 +35,27 @@ impl Interval {
         t > self.lower_bound && t < self.upper_bound
     }
 
+    pub fn clamp(self, value: f64) -> f64 {
+        f64::min(f64::max(self.lower_bound, value), self.upper_bound)
+    }
+
     pub const EMPTY: Interval = Interval::new(f64::INFINITY, f64::NEG_INFINITY);
     pub const UNIVERSE: Interval = Interval::new(f64::NEG_INFINITY, f64::INFINITY);
+}
+
+impl std::ops::Add<f64> for Interval {
+    type Output = Interval;
+    fn add(self, rhs: f64) -> Interval {
+        Interval {
+            lower_bound: self.lower_bound + rhs,
+            upper_bound: self.upper_bound + rhs,
+        }
+    }
+}
+
+impl std::ops::Add<Interval> for f64 {
+    type Output = Interval;
+    fn add(self, rhs: Interval) -> Interval {
+        rhs + self
+    }
 }

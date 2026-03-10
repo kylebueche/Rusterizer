@@ -58,7 +58,13 @@ impl Material for Metal {
         reflected = reflected.normalized() + (self.fuzz * random_unit_vector());
         *scattered = Ray::with_time(hit_record.point, reflected, ray_in.time);
         *attenuation = self.albedo;
-        scattered.direction.dot(hit_record.normal) > 0.0
+        if scattered.direction.dot(hit_record.normal) > 0.0 {
+            *attenuation = self.albedo;
+            true
+        } else {
+            *attenuation = Color::new(0.0, 0.0, 0.0);
+            false
+        }
     }
 }
 
@@ -102,6 +108,53 @@ impl Material for Dielectric {
         };
 
         *scattered = Ray::with_time(hit_record.point, direction, ray_in.time);
+        true
+    }
+}
+
+pub struct DiffuseLight {
+    tex: Arc<dyn Texture>,
+}
+
+impl DiffuseLight {
+    pub fn new(emit: Color) -> Self {
+        Self {
+            tex: Arc::new(SolidColor::new(emit)),
+        }
+    }
+    
+    pub fn from_texture(tex: Arc<dyn Texture>) -> Self {
+        Self { tex }
+    }
+}
+
+impl Material for DiffuseLight {
+    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Color, scattered: &mut Ray) -> bool {
+        *attenuation = self.tex.value(hit_record.u, hit_record.v, hit_record.point);
+        false
+    }
+}
+
+pub struct Isotropic {
+    tex: Arc<dyn Texture>,
+}
+
+impl Isotropic {
+    pub fn new(albedo: Color) -> Self {
+        Self {
+            tex: Arc::new(SolidColor::new(albedo)),
+        }
+    }
+    
+    pub fn from_texture(tex: Arc<dyn Texture>) -> Self {
+        Self { tex }
+    }
+}
+
+impl Material for Isotropic {
+    fn scatter(&self, ray_in: Ray, hit_record: &HitRecord, attenuation: &mut Color, scattered: &mut Ray) -> bool {
+        *scattered = Ray::with_time(hit_record.point, random_unit_vector(), ray_in.time);
+        *attenuation = self.tex.value(hit_record.u, hit_record.v, hit_record.point);
         true
     }
 }

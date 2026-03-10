@@ -29,6 +29,7 @@ pub struct Camera {
     pub look_at: Vec3,
     pub defocus_angle: f64,
     pub focus_dist: f64,
+    pub background: Color,
     // uninit
     right: Vec3,
     focal_length: f64,
@@ -61,6 +62,7 @@ impl Camera {
             look_at: Vec3::new(0.0, 0.0, -1.0),
             defocus_angle: 0.0,
             focus_dist: 10.0,
+            background: Color::new(0.0, 0.0, 0.0),
             // uninit:
             right: Vec3::new(1.0, 0.0, 0.0),
             viewport_width: 1.0,
@@ -96,6 +98,7 @@ impl Camera {
             look_at: Vec3::new(0.0, 0.0, -1.0),
             defocus_angle: 0.0,
             focus_dist: 10.0,
+            background: Color::new(0.0, 0.0, 0.0),
             // uninit:
             right: Vec3::new(1.0, 0.0, 0.0),
             viewport_width: 1.0,
@@ -179,7 +182,7 @@ impl Camera {
             for i in 0..row.len() {
                 let index =  chunk_number * chunk_size + i;
                 self.pixel_kernel(index, img.width, scene_objects, &mut row[i]);
-                //let curr_samples= self.convergent_kernel(0.20, index, img.width, scene_objects, &mut row[i]);
+                //let curr_samples= self.convergent_kernel(0.07, index, img.width, scene_objects, &mut row[i]);
                 //total_chunk_samples += curr_samples;
                 //peak = f64::max(peak, curr_samples);
             }
@@ -281,14 +284,16 @@ impl Camera {
         }
         let mut hit_record = HitRecord::new();
         let mut interval = Interval::new(1.0e-8, f64::INFINITY);
-        if scene_objects.first_hit_on_interval(ray, &mut interval, &mut hit_record) {
+        if !scene_objects.first_hit_on_interval(ray, &mut interval, &mut hit_record) {
+            return self.background;
+        } else {
             let mut scattered: Ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
             let mut attenuation: Color = Color::new(0.0, 0.0, 0.0);
             let mat = hit_record.mat.clone();
             if mat.unwrap().scatter(ray, &hit_record, &mut attenuation, &mut scattered) {
                 return attenuation * self.ray_color(scattered, scene_objects, depth - 1);
             }
-            return Color::new(0.0, 0.0, 0.0);
+            return attenuation;
         }
         let unit_direction = ray.direction.normalized();
         let a = 0.5 * (unit_direction.y + 1.0);

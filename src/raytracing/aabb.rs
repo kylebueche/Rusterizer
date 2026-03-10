@@ -24,7 +24,9 @@ impl AABB {
     };
 
     pub fn new(x: Interval, y: Interval, z: Interval) -> Self {
-        Self { x, y, z }
+        let mut aabb = Self { x, y, z };
+        aabb.pad_to_minimums();
+        aabb
     }
 
     pub fn from_corners(a: Vec3, b: Vec3) -> Self {
@@ -40,6 +42,19 @@ impl AABB {
             x: Interval::from_intervals(a.x, b.x),
             y: Interval::from_intervals(a.y, b.y),
             z: Interval::from_intervals(a.z, b.z),
+        }
+    }
+
+    fn pad_to_minimums(&mut self) {
+        let delta = 0.0001;
+        if self.x.size() < delta {
+            self.x.expand(delta);
+        }
+        if self.y.size() < delta {
+            self.y.expand(delta);
+        }
+        if self.z.size() < delta {
+            self.z.expand(delta);
         }
     }
 
@@ -115,5 +130,23 @@ impl AABB {
                 2
             }
         }
+    }
+}
+
+impl std::ops::Add<Vec3> for AABB {
+    type Output = AABB;
+    fn add(self, rhs: Vec3) -> AABB {
+        AABB {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl std::ops::Add<AABB> for Vec3 {
+    type Output = AABB;
+    fn add(self, rhs: AABB) -> AABB {
+        rhs + self
     }
 }
