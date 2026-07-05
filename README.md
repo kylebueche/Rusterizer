@@ -22,6 +22,8 @@ A Software Rasterizer and Path Tracer written in Rust
 - Global Illumination
 - Texture Loading
 - Procedural Noise Textures
+- Depth of Field
+- Motion Blur
 
 ### Usage Guide:
 
